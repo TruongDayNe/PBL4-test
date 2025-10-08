@@ -30,9 +30,9 @@ jobs:
         configuration: [Debug, Release]
 
     env:
-      Solution_Name: VirtualSofa.sln
+      Solution_Name: RealTimeUdpStream.sln
       Test_Project_Path: Tests/Tests.csproj
-      Wap_Project_Path: UI/UI.csproj
+      Wap_Project_Path: WPFUI/WPFUI.csproj
 
     steps:
     - uses: actions/checkout@v4

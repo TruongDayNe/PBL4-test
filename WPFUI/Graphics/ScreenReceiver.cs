@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 // Change the using directive to the correct namespace for BitmapSource and BitmapImage:
 using System.Windows.Media.Imaging;
 
-namespace WPGUI.Graphics
+namespace WPFUI.Graphics
 {
     // Delegate để thông báo khi một khung hình hoàn chỉnh sẵn sàng hiển thị
     public delegate void FrameReadyHandler(BitmapSource frameSource);
