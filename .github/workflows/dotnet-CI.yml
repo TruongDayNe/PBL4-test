@@ -1,0 +1,69 @@
+# This workflow will build, test, sign and package a WPF or Windows Forms desktop application
+# built on .NET Core.
+# To learn how to migrate your existing application to .NET Core,
+# refer to https://docs.microsoft.com/en-us/dotnet/desktop-wpf/migration/convert-project-from-net-framework
+#
+# To configure this workflow:
+#
+# 1. Configure environment variables
+# GitHub sets default environment variables for every workflow run.
+# Replace the variables relative to your project in the "env" section below.
+
+# For more information on GitHub Actions, refer to https://github.com/features/actions
+# For a complete CI/CD sample to get started with GitHub Action workflows for Desktop Applications,
+# refer to https://github.com/microsoft/github-actions-for-desktop-apps
+
+name: .NET Core Desktop
+
+on:
+  push:
+    branches: [ "main" , "develop" , "feature*" ]
+  pull_request:
+    branches: [ "main" , "develop" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+
+    env:
+      Solution_Name: VirtualSofa.sln
+      Test_Project_Path: Tests/Tests.csproj
+      Wap_Project_Path: UI/UI.csproj
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Restore dependencies
+      run: dotnet restore $env:Solution_Name
+
+    - name: Restore NuGet packages (legacy)
+      run: nuget restore $env:Solution_Name
+
+    - name: Run Tests
+      run: dotnet test $env:Test_Project_Path --configuration ${{ matrix.configuration }}
+
+    # - name: Publish App
+    #   run: dotnet publish $env:Wap_Project_Path -c ${{ matrix.configuration }} -r win-x64 --self-contained true -o publish
+
+    # (Optional) Download Driver
+    # - name: Download ViGEmBus Driver
+    #   run: |
+    #     Invoke-WebRequest -Uri "https://github.com/nefarius/ViGEmBus/releases/download/v1.21.442/ViGEmBus_Setup_1.21.442.exe" -OutFile "publish/ViGEmBusSetup.exe"
+
+    # - name: Upload Build Artifact
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: VirtualSofa-${{ matrix.configuration }}
+    #     path: publish/
