@@ -1,19 +1,14 @@
-# This workflow will build, test, sign and package a WPF or Windows Forms desktop application
-# built on .NET Core.
-# To learn how to migrate your existing application to .NET Core,
-# refer to https://docs.microsoft.com/en-us/dotnet/desktop-wpf/migration/convert-project-from-net-framework
+# This workflow will build, test, and package a WPF or Windows Forms desktop application
+# built on the .NET Framework.
 #
 # To configure this workflow:
 #
 # 1. Configure environment variables
-# GitHub sets default environment variables for every workflow run.
-# Replace the variables relative to your project in the "env" section below.
+#    - Update the variables in the "env" section below to match your project's solution and project paths.
 
 # For more information on GitHub Actions, refer to https://github.com/features/actions
-# For a complete CI/CD sample to get started with GitHub Action workflows for Desktop Applications,
-# refer to https://github.com/microsoft/github-actions-for-desktop-apps
 
-name: .NET Core Desktop
+name: .NET Framework Desktop Build
 
 on:
   push:
@@ -23,6 +18,7 @@ on:
 
 jobs:
   build:
+    # Use the latest Windows runner, which includes .NET Framework SDKs
     runs-on: windows-latest
 
     strategy:
@@ -30,34 +26,44 @@ jobs:
         configuration: [Debug, Release]
 
     env:
+      # TODO: Change this to the name of your solution file.
       Solution_Name: RealTimeUdpStream.sln
+      # TODO: Change this to the path of your main WPF app project.
+      App_Project_Path: WPFUI/WPFUI.csproj
+      # TODO: Change this to the path of your test project.
       Test_Project_Path: Tests/Tests.csproj
-      Wap_Project_Path: WPFUI/WPFUI.csproj
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 8.0.x
+    # The 'windows-latest' runner already has .NET Framework 4.8.
+    # We just need to set up MSBuild and NuGet.
 
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
 
-    - name: Restore dependencies
-      run: dotnet restore $env:Solution_Name
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v2
 
-    - name: Restore NuGet packages (legacy)
-      run: nuget restore $env:Solution_Name
+    - name: Restore NuGet packages
+      run: nuget restore ${{ env.Solution_Name }}
+
+    - name: Build the solution
+      run: msbuild ${{ env.Solution_Name }} /p:Configuration=${{ matrix.configuration }}
 
     - name: Run Tests
-      run: dotnet test $env:Test_Project_Path --configuration ${{ matrix.configuration }}
+      # This uses the Visual Studio Test Console (vstest), which is the standard for .NET Framework.
+      run: vstest.console.exe ${{ env.Test_Project_Path }} /p:Configuration=${{ matrix.configuration }}
+
+    # The following steps are optional. Uncomment them to publish your application
+    # and upload it as a build artifact.
 
     # - name: Publish App
-    #   run: dotnet publish $env:Wap_Project_Path -c ${{ matrix.configuration }} -r win-x64 --self-contained true -o publish
+    #   # This uses the 'publish' target in MSBuild to prepare the app for deployment.
+    #   run: msbuild ${{ env.App_Project_Path }} /t:publish /p:Configuration=${{ matrix.configuration }} /p:Platform=x64 /p:PublishDir=publish
 
-    # (Optional) Download Driver
+    # (Optional) Example of downloading an external dependency like a driver.
     # - name: Download ViGEmBus Driver
     #   run: |
     #     Invoke-WebRequest -Uri "https://github.com/nefarius/ViGEmBus/releases/download/v1.21.442/ViGEmBus_Setup_1.21.442.exe" -OutFile "publish/ViGEmBusSetup.exe"
@@ -65,5 +71,7 @@ jobs:
     # - name: Upload Build Artifact
     #   uses: actions/upload-artifact@v4
     #   with:
-    #     name: VirtualSofa-${{ matrix.configuration }}
+    #     # The artifact name will include the build configuration (e.g., 'MyApp-Release').
+    #     name: YourAppName-${{ matrix.configuration }}
+    #     # This path should match the 'PublishDir' from the publish step.
     #     path: publish/

@@ -145,8 +145,6 @@
     <Compile Include="Networking\NetworkStats.cs" />
     <Compile Include="Networking\PackerParser.cs" />
     <Compile Include="Util\BigEndian.cs" />
-    <Compile Include="Models\Config.cs" />
-    <Compile Include="Models\GpuDetector.cs" />
     <Compile Include="Models\UdpPacket.cs" />
     <Compile Include="Models\TelemetrySnapshot.cs" />
     <Compile Include="Networking\PacketBuilder.cs" />
