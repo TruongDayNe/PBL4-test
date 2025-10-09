@@ -141,6 +141,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Models\FecGroup.cs" />
     <Compile Include="Networking\FecXor.cs" />
     <Compile Include="Networking\NetworkStats.cs" />
     <Compile Include="Networking\PackerParser.cs" />
@@ -160,12 +161,6 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\NetStreamer\ScreenDublicator\ScreenDublicator.csproj">
-      <Project>{1aa361f0-1ad5-44eb-a9cd-20a1a5b57735}</Project>
-      <Name>ScreenDublicator</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

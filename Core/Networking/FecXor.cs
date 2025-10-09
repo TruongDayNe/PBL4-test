@@ -1,7 +1,6 @@
 ﻿using RealTimeUdpStream.Core.Models;
 using RealTimeUdpStream.Core.Util;
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -9,70 +8,74 @@ namespace RealtimeUdpStream.Core.Networking
 {
     public static class FecXor
     {
-        /// <summary>
-        /// Tạo gói tin phục hồi (parity shard) bằng cách XOR các gói tin dữ liệu.
-        /// Giả định các gói tin dữ liệu có cùng kích thước payload.
-        /// </summary>
         public static UdpPacket CreateParityPacket(IEnumerable<UdpPacket> dataPackets)
         {
             var dataPacketList = dataPackets.ToList();
-            if (!dataPacketList.Any())
-            {
-                return null;
-            }
+            if (!dataPacketList.Any()) return null;
 
-            int payloadLength = dataPacketList.First().Payload.Length;
-            var parityPayload = BytePool.Rent(payloadLength);
+            int payloadLength = dataPacketList.First().Payload.Count;
+            var parityPayloadBuffer = BytePool.Rent(payloadLength);
 
             try
             {
-                // Khởi tạo mảng về 0 để tránh lỗi từ dữ liệu cũ trong pool
-                Array.Clear(parityPayload, 0, payloadLength);
+                var parityPayloadSpan = parityPayloadBuffer.AsSpan(0, payloadLength);
+                parityPayloadSpan.Clear();
 
                 foreach (var packet in dataPacketList)
                 {
+                    var sourcePayload = packet.Payload;
                     for (int i = 0; i < payloadLength; i++)
                     {
-                        parityPayload[i] ^= packet.Payload[i];
+                        // Dùng .Array và .Offset để truy cập
+                        parityPayloadSpan[i] ^= sourcePayload.Array[sourcePayload.Offset + i];
                     }
                 }
 
                 var fecHeader = new UdpPacketHeader { PacketType = (byte)UdpPacketType.Fec, Version = 1 };
-                var finalParityPayload = new byte[payloadLength];
-                Array.Copy(parityPayload, finalParityPayload, payloadLength);
-                return new UdpPacket(fecHeader, finalParityPayload);
+                var payloadSegment = new ArraySegment<byte>(parityPayloadBuffer, 0, payloadLength);
+
+                return new UdpPacket(fecHeader, payloadSegment) { IsPayloadFromPool = true };
             }
-            finally
+            catch
             {
-                // Đảm bảo mảng được trả lại vào pool
-                BytePool.Return(parityPayload);
+                BytePool.Return(parityPayloadBuffer);
+                throw;
             }
         }
 
-        /// <summary>
-        /// Phục hồi một gói tin bị mất bằng cách XOR các gói tin còn lại với gói tin parity.
-        /// </summary>
         public static UdpPacket RecoverPacket(UdpPacket fecPacket, IEnumerable<UdpPacket> receivedPackets)
         {
-            if (fecPacket == null || !receivedPackets.Any())
-            {
-                return null;
-            }
+            if (fecPacket == null || !receivedPackets.Any()) return null;
 
-            var recoveredPayload = new byte[fecPacket.Payload.Length];
-            Array.Copy(fecPacket.Payload, recoveredPayload, recoveredPayload.Length);
+            int payloadLength = fecPacket.Payload.Count;
+            var recoveredPayloadBuffer = BytePool.Rent(payloadLength);
 
-            foreach (var packet in receivedPackets)
+            try
             {
-                for (int i = 0; i < recoveredPayload.Length; i++)
+                var recoveredPayloadSpan = recoveredPayloadBuffer.AsSpan(0, payloadLength);
+                // Dùng Buffer.BlockCopy cho hiệu năng cao hơn khi copy
+                Buffer.BlockCopy(fecPacket.Payload.Array, fecPacket.Payload.Offset, recoveredPayloadBuffer, 0, payloadLength);
+
+                foreach (var packet in receivedPackets)
                 {
-                    recoveredPayload[i] ^= packet.Payload[i];
+                    var sourcePayload = packet.Payload;
+                    for (int i = 0; i < payloadLength; i++)
+                    {
+                        // SỬA LỖI Ở ĐÂY: Dùng .Array và .Offset để truy cập
+                        recoveredPayloadSpan[i] ^= sourcePayload.Array[sourcePayload.Offset + i];
+                    }
                 }
+
+                var recoveredHeader = new UdpPacketHeader { PacketType = (byte)UdpPacketType.Video };
+                var payloadSegment = new ArraySegment<byte>(recoveredPayloadBuffer, 0, payloadLength);
+
+                return new UdpPacket(recoveredHeader, payloadSegment) { IsPayloadFromPool = true };
             }
-
-            var recoveredHeader = new UdpPacketHeader { PacketType = (byte)UdpPacketType.Video };
-
-            return new UdpPacket(recoveredHeader, recoveredPayload);
+            catch
+            {
+                BytePool.Return(recoveredPayloadBuffer);
+                throw;
+            }
         }
     }
 }

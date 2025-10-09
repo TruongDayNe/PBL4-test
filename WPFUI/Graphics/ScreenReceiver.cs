@@ -1,11 +1,8 @@
 ﻿using Core.Networking;
 using RealTimeUdpStream.Core.Models;
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 
@@ -16,7 +13,6 @@ namespace WPFUI.Graphics
     public class ScreenReceiver : IDisposable
     {
         private readonly UdpPeer _peer;
-        private readonly ConcurrentDictionary<uint, ConcurrentDictionary<ushort, UdpPacket>> _frameBuffers = new ConcurrentDictionary<uint, ConcurrentDictionary<ushort, UdpPacket>>();
         private bool _isReceiving = false;
 
         public event FrameReadyHandler OnFrameReady;
@@ -24,57 +20,41 @@ namespace WPFUI.Graphics
         public ScreenReceiver(int listenPort)
         {
             _peer = new UdpPeer(listenPort);
-            _peer.OnPacketReceived += HandlePacketReceived;
+            // Đăng ký vào sự kiện của UdpPeer, nơi sẽ trả về các frame đã hoàn chỉnh
+            _peer.OnPacketReceived += Peer_OnPacketReceived;
         }
 
         public void Start()
         {
             if (_isReceiving) return;
             _isReceiving = true;
-            Task.Run(async () =>
-            {
-                try { await _peer.StartReceivingAsync(); }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Receiver loop stopped: {ex.Message}");
-                }
-            });
+            Task.Run(() => _peer.StartReceivingAsync());
         }
 
         public void Stop()
         {
+            if (!_isReceiving) return;
             _isReceiving = false;
-            _peer.Stop();
+            //_peer.Stop(); // UdpPeer đã có sẵn phương thức Stop
         }
 
-        private void HandlePacketReceived(UdpPacket packet)
+        /// <summary>
+        /// Được gọi bởi UdpPeer mỗi khi có một frame HOÀN CHỈNH (đã được ghép và/hoặc phục hồi).
+        /// </summary>
+        private void Peer_OnPacketReceived(UdpPacket packet)
         {
-            var header = packet.Header;
-            var sequence = header.SequenceNumber;
-
-            var chunkBuffer = _frameBuffers.GetOrAdd(sequence, _ => new ConcurrentDictionary<ushort, UdpPacket>());
-            chunkBuffer.TryAdd(header.ChunkId, packet);
-
-            if (chunkBuffer.Count == header.TotalChunks)
+            // Chỉ xử lý các gói tin Video
+            if (packet.Header.PacketType != (byte)UdpPacketType.Video)
             {
-                Task.Run(() => ReassembleAndDisplay(sequence));
+                // Nếu packet này mượn buffer từ pool, hãy chắc chắn trả lại nó
+                packet.Dispose();
+                return;
             }
 
-            CleanUpOldFrames(sequence);
-        }
-
-        private void ReassembleAndDisplay(uint sequence)
-        {
-            if (!_frameBuffers.TryRemove(sequence, out var chunkBuffer)) return;
-
-            var sortedChunks = chunkBuffer.OrderBy(c => c.Key).Select(c => c.Value.Payload);
-            using (var ms = new MemoryStream())
+            // Gói packet sẽ tự động trả buffer về pool khi ra khỏi khối using
+            using (packet)
             {
-                foreach (var payload in sortedChunks)
-                {
-                    ms.Write(payload, 0, payload.Length);
-                }
-                var bitmapSource = ConvertBytesToBitmapSource(ms.ToArray());
+                var bitmapSource = ConvertBytesToBitmapSource(packet.Payload);
                 if (bitmapSource != null)
                 {
                     OnFrameReady?.Invoke(bitmapSource);
@@ -82,19 +62,20 @@ namespace WPFUI.Graphics
             }
         }
 
-        private BitmapSource ConvertBytesToBitmapSource(byte[] imageBytes)
+        private BitmapSource ConvertBytesToBitmapSource(ArraySegment<byte> imageBytes)
         {
-            if (imageBytes == null || imageBytes.Length == 0) return null;
+            if (imageBytes.Array == null || imageBytes.Count == 0) return null;
             try
             {
-                using (var ms = new MemoryStream(imageBytes))
+                // MemoryStream có thể làm việc trực tiếp với ArraySegment
+                using (var ms = new MemoryStream(imageBytes.Array, imageBytes.Offset, imageBytes.Count))
                 {
                     var bitmap = new BitmapImage();
                     bitmap.BeginInit();
                     bitmap.CacheOption = BitmapCacheOption.OnLoad;
                     bitmap.StreamSource = ms;
                     bitmap.EndInit();
-                    bitmap.Freeze();
+                    bitmap.Freeze(); // Quan trọng để tối ưu cho WPF
                     return bitmap;
                 }
             }
@@ -102,15 +83,6 @@ namespace WPFUI.Graphics
             {
                 Debug.WriteLine($"Error converting bytes to image: {ex.Message}");
                 return null;
-            }
-        }
-
-        private void CleanUpOldFrames(uint currentSequence)
-        {
-            var framesToClear = _frameBuffers.Keys.Where(seq => seq < currentSequence && currentSequence - seq > 10).ToList();
-            foreach (var seq in framesToClear)
-            {
-                _frameBuffers.TryRemove(seq, out _);
             }
         }
 

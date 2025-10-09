@@ -96,33 +96,6 @@ namespace WPFUI
             });
         }
 
-        private async void TestSendFrameBtn_Click(object sender, RoutedEventArgs e)
-        {
-            if (_screenSender == null)
-            {
-                _screenSender = new ScreenSender(CLIENT_IP, CLIENT_PORT, SERVER_PORT, _screenProcessor);
-                MessageBox.Show("Đã tự động khởi tạo Sender để test. Hãy đảm bảo Receiver cũng đang chạy.", "Thông báo");
-            }
-            try
-            {
-                Image capturedImage = await _screenSender.SendSingleFrameAsync();
-                if (capturedImage != null)
-                {
-                    this.pnScreen.Source = ToBitmapSource(capturedImage);
-                    capturedImage.Dispose();
-                    MessageBox.Show("Đã gửi và hiển thị frame test!", "Hoàn tất");
-                }
-                else
-                {
-                    MessageBox.Show("Không thể chụp hoặc gửi frame.", "Thất bại");
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Lỗi khi gửi frame test: {ex.Message}", "Lỗi");
-            }
-        }
-
         public static BitmapSource ToBitmapSource(Image image)
         {
             if (image == null) return null;

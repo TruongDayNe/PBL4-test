@@ -26,7 +26,6 @@
                 Padding="20,10"/>
             <Button x:Name="startStreamBtn" Content="Bắt đầu STREAM" Click="StartStreamBtn_Click" Padding="20,10" Margin="5"/>
             <Button x:Name="startReceiveBtn" Content="Bắt đầu NHẬN" Click="StartReceiveBtn_Click" Padding="20,10" Margin="5"/>
-            <Button x:Name="testSendFrameBtn" Content="Gửi 1 Frame Test" Click="TestSendFrameBtn_Click" Padding="20,10" Margin="5" Background="LightGoldenrodYellow"/>
         </StackPanel>
 
     </Grid>
