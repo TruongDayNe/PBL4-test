@@ -75,8 +75,8 @@ public class UdpPeerTests
 
         await Task.Delay(100);
 
-        client.Stop();
-        server.Stop();
+        client.Dispose();
+        server.Dispose();
         clientTokenSource.Cancel();
 
         await clientTask;
@@ -84,8 +84,5 @@ public class UdpPeerTests
         var reassembledPacket = receivedPackets.FirstOrDefault();
         Assert.NotNull(reassembledPacket);
         Assert.Equal(largeData, reassembledPacket.Payload.Take(largeData.Length).ToArray());
-
-        server.Dispose();
-        client.Dispose();
     }
 }
