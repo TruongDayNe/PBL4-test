@@ -144,6 +144,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\NetStreamer\ScreenDublicator\ScreenDublicator.csproj">
+      <Project>{1aa361f0-1ad5-44eb-a9cd-20a1a5b57735}</Project>
+      <Name>ScreenDublicator</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Core\Core.csproj">
       <Project>{b48724c9-a6bd-456b-9408-3717e4b8d618}</Project>
       <Name>Core</Name>

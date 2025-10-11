@@ -8,6 +8,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{0054B62A-4E3F-45A0-BAF9-459A3B169A02}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPFUI", "WPFUI\WPFUI.csproj", "{72539F2E-8CAE-48C5-8979-7C87E3741441}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AA361F0-1AD5-44EB-A9CD-20A1A5B57735} = {1AA361F0-1AD5-44EB-A9CD-20A1A5B57735}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScreenDublicator", "..\NetStreamer\ScreenDublicator\ScreenDublicator.csproj", "{1AA361F0-1AD5-44EB-A9CD-20A1A5B57735}"
 EndProject
