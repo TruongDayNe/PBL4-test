@@ -112,6 +112,11 @@ namespace WPFUI
 
         private void StartButton_Click(object sender, RoutedEventArgs e)
         {
+            MessageBox.Show("Sử dụng nút 'Cấu hình IP' để thay đổi địa chỉ server.", "Thông báo");
+        }
+
+        private void ConfigIPBtn_Click(object sender, RoutedEventArgs e)
+        {
             ConfigureServerIP();
         }
 
