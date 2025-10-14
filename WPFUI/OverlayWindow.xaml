@@ -1,0 +1,99 @@
+﻿<Window x:Class="WPFUI.OverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="OverlayWindow"
+        
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        WindowState="Maximized"
+        TextOptions.TextRenderingMode="ClearType" 
+        TextOptions.TextFormattingMode="Display">
+    <Grid>
+        <Border x:Name="InitialPopup"
+                CornerRadius="8"
+                Background="#DD222222"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                Margin="0,20,20,0"
+                Padding="15,10"
+                BorderBrush="#44FFFFFF"
+                BorderThickness="1"
+                Visibility="Collapsed">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🛋️" FontSize="24" VerticalAlignment="Center"/>
+                <StackPanel Margin="15,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="VIRTUAL SOFA" FontWeight="Bold" Foreground="White" />
+                    <TextBlock Text="Ctrl + Alt + Q để hiện thị chi tiết" Foreground="#AAAAAA" FontSize="11"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Grid x:Name="SimpleOverlay" Visibility="Collapsed">
+            <TextBlock Text="FPS: 60  ·  Packet loss: 2%  ·  Ping: 60 ms"
+                       Foreground="White"
+                       FontSize="13"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Top"
+                       Margin="0,20,20,0">
+                <TextBlock.Effect>
+                    <DropShadowEffect ShadowDepth="1" BlurRadius="2" Color="Black" Opacity="0.8"/>
+                </TextBlock.Effect>
+            </TextBlock>
+
+            <ItemsControl HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="20,0,0,20">
+                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                    <TextBlock Text="👤" FontSize="24"/>
+                    <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="User Name 1" Foreground="White" FontSize="11"/>
+                        <TextBlock Text="Ping: 60 ms" Foreground="#AAAAAA" FontSize="10"/>
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                    <TextBlock Text="👤" FontSize="24"/>
+                    <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="User Name 2" Foreground="White" FontSize="11"/>
+                        <TextBlock Text="Ping: 60 ms" Foreground="#AAAAAA" FontSize="10"/>
+                    </StackPanel>
+                </StackPanel>
+            </ItemsControl>
+        </Grid>
+
+        <Grid x:Name="FocusOverlay" Visibility="Collapsed">
+            <Grid Background="#88000000" />
+
+            <Border Width="320"
+                    CornerRadius="10"
+                    Background="#DD1A1A1A"
+                    BorderBrush="#44FFFFFF"
+                    BorderThickness="1"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Padding="15">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🛋️" FontSize="24" VerticalAlignment="Center"/>
+                        <TextBlock Text="Host Overlay" Foreground="White" FontWeight="Bold" FontSize="16" Margin="15,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <Separator Margin="0,10" Background="#44FFFFFF"/>
+                    <TextBlock Text="Streaming: 1920x1080 @ 60 FPS" Foreground="#CCCCCC" Margin="0,5"/>
+                    <TextBlock Text="Encoding: NVENC H.264 | Bitrate: 12 Mbps" Foreground="#CCCCCC" Margin="0,5"/>
+                    <TextBlock Text="CPU: 42% | GPU: 67% | RAM: 3.2 GB" Foreground="#CCCCCC" Margin="0,5"/>
+                    <Separator Margin="0,10" Background="#44FFFFFF"/>
+                    <TextBlock Text="Connected Clients: 3" Foreground="#AAAAAA" Margin="0,0,0,10"/>
+                    <ItemsControl>
+                        <Border BorderBrush="#33FFFFFF" BorderThickness="0,0,0,1" Padding="0,10">
+                            <TextBlock Text="👤 Client 1 - 192.168.1.2 | Ping: 55 ms | Packet Loss: 1% | Up: 3.5 Mbps | Down: 7.1 Mbps" 
+                                       Foreground="#CCCCCC" TextWrapping="Wrap"/>
+                        </Border>
+                        <Border BorderBrush="#33FFFFFF" BorderThickness="0,0,0,1" Padding="0,10">
+                            <TextBlock Text="👤 Client 2 - 192.168.1.3 | Ping: 80 ms | Packet Loss: 4% | Up: 3.0 Mbps | Down: 7.0 Mbps" 
+                                       Foreground="#CCCCCC" TextWrapping="Wrap"/>
+                        </Border>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

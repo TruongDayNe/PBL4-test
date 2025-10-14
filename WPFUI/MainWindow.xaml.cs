@@ -88,6 +88,13 @@ namespace WPFUI
             startReceiveBtn.Content = "Dừng NHẬN";
         }
 
+        private void TestOverlayBtn_Click(object sender, RoutedEventArgs e)
+        {
+            // Tạo một thể hiện của cửa sổ overlay mới và hiển thị nó
+            var overlayWindow = new OverlayWindow();
+            overlayWindow.Show();
+        }
+
         private void HandleFrameReady(BitmapSource frameSource)
         {
             Dispatcher.Invoke(() =>
