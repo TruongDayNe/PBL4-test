@@ -21,7 +21,7 @@
                 Orientation="Horizontal" 
                 HorizontalAlignment="Center" 
                 Margin="10">
-            <Button x:Name="configIPBtn" Content="Cấu hình IP" Click="ConfigIPBtn_Click" Padding="20,10" Margin="5" Background="LightGreen"/>
+            <Button x:Name="configIPBtn" Content="Cấu hình Receiver IP" Click="ConfigIPBtn_Click" Padding="20,10" Margin="5" Background="LightGreen"/>
             <Button x:Name="startStreamBtn" Content="Bắt đầu STREAM" Click="StartStreamBtn_Click" Padding="20,10" Margin="5"/>
             <Button x:Name="startReceiveBtn" Content="Bắt đầu NHẬN" Click="StartReceiveBtn_Click" Padding="20,10" Margin="5"/>
             <Button x:Name="testOverlayBtn" Content="Test Overlay" Click="TestOverlayBtn_Click" Padding="20,10" Margin="5" Background="LightSkyBlue"/>

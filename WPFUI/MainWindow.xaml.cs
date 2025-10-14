@@ -13,9 +13,9 @@ namespace WPFUI
 {
     public partial class MainWindow : Window
     {
-        private string _serverIP = "127.0.0.1"; // IP của máy server (sender)
-        private const int SERVER_PORT = 12000;
-        private const int CLIENT_PORT = 12001;
+        private string _receiverIP = "127.0.0.1"; // IP của máy nhận (receiver/client)
+        private const int SERVER_PORT = 12000; // Port mà sender lắng nghe
+        private const int CLIENT_PORT = 12001; // Port mà receiver lắng nghe
 
         private readonly ScreenProcessor _screenProcessor;
         private ScreenSender _screenSender;
@@ -41,29 +41,29 @@ namespace WPFUI
 
         private void UpdateWindowTitle()
         {
-            this.Title = $"Real-Time Screen Streaming - Server IP: {_serverIP}";
+            this.Title = $"Real-Time Screen Streaming - Receiver IP: {_receiverIP}";
         }
 
         private void ConfigureServerIP()
         {
-            string prompt = $"Nhập IP của máy server (sender):\n\n" +
-                          $"• Để stream từ máy này: 127.0.0.1\n" +
-                          $"• Để nhận từ máy khác: IP của máy đó\n" +
-                          $"Ví dụ: 192.168.1.100\n\n" +
-                          $"IP hiện tại: {_serverIP}";
+            string prompt = $"Nhập IP của máy nhận (receiver):\n\n" +
+                          $"• Nếu nhận trên máy này: 127.0.0.1\n" +
+                          $"• Nếu gửi tới máy khác: IP của máy đó\n" +
+                          $"Ví dụ: 192.168.1.101\n\n" +
+                          $"IP hiện tại: {_receiverIP}";
 
             var result = MessageBox.Show(
                 prompt + "\n\nBạn có muốn thay đổi IP không?",
-                "Cấu hình Server IP",
+                "Cấu hình Receiver IP",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
 
             if (result == MessageBoxResult.Yes)
             {
-                // Tạm thời sử dụng một prompt đơn giản
+                // Tạo một dialog đơn giản để nhập IP
                 var inputWindow = new Window
                 {
-                    Title = "Nhập Server IP",
+                    Title = "Nhập Receiver IP",
                     Width = 400,
                     Height = 150,
                     WindowStartupLocation = WindowStartupLocation.CenterOwner,
@@ -77,7 +77,7 @@ namespace WPFUI
 
                 var textBox = new System.Windows.Controls.TextBox
                 {
-                    Text = _serverIP,
+                    Text = _receiverIP,
                     Margin = new Thickness(0, 10, 0, 10)
                 };
 
@@ -91,14 +91,14 @@ namespace WPFUI
 
                 okButton.Click += (s, e) =>
                 {
-                    _serverIP = textBox.Text.Trim();
-                    if (string.IsNullOrWhiteSpace(_serverIP))
-                        _serverIP = "127.0.0.1";
+                    _receiverIP = textBox.Text.Trim();
+                    if (string.IsNullOrWhiteSpace(_receiverIP))
+                        _receiverIP = "127.0.0.1";
                     inputWindow.DialogResult = true;
                     inputWindow.Close();
                 };
 
-                stackPanel.Children.Add(new System.Windows.Controls.Label { Content = "Server IP:" });
+                stackPanel.Children.Add(new System.Windows.Controls.Label { Content = "Receiver IP:" });
                 stackPanel.Children.Add(textBox);
                 stackPanel.Children.Add(okButton);
                 inputWindow.Content = stackPanel;
@@ -134,7 +134,7 @@ namespace WPFUI
             }
 
             _cancellationTokenSource = new CancellationTokenSource();
-            _screenSender = new ScreenSender(_serverIP, CLIENT_PORT, SERVER_PORT, _screenProcessor);
+            _screenSender = new ScreenSender(_receiverIP, CLIENT_PORT, SERVER_PORT, _screenProcessor);
             _screenSender.OnFrameCaptured += HandleFrameCaptured;
             startStreamBtn.Content = "Dừng STREAM";
             Task.Run(() => _screenSender.SendScreenLoopAsync(_cancellationTokenSource.Token));
