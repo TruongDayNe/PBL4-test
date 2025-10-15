@@ -52,26 +52,21 @@ jobs:
     - name: Build the solution
       run: msbuild ${{ env.Solution_Name }} /p:Configuration=${{ matrix.configuration }}
 
-    - name: Run Tests
-      # This uses the Visual Studio Test Console (vstest), which is the standard for .NET Framework.
-      run: vstest.console.exe ${{ env.Test_Project_Path }} /p:Configuration=${{ matrix.configuration }}
+    # - name: Run Tests # (Đã vô hiệu hóa theo yêu cầu)
+    #   # This uses the Visual Studio Test Console (vstest), which is the standard for .NET Framework.
+    #   run: vstest.console.exe ${{ env.Test_Project_Path }} /p:Configuration=${{ matrix.configuration }}
 
-    # The following steps are optional. Uncomment them to publish your application
-    # and upload it as a build artifact.
+    # Các bước sau đây đã được kích hoạt để đóng gói ứng dụng của bạn.
 
-    # - name: Publish App
-    #   # This uses the 'publish' target in MSBuild to prepare the app for deployment.
-    #   run: msbuild ${{ env.App_Project_Path }} /t:publish /p:Configuration=${{ matrix.configuration }} /p:Platform=x64 /p:PublishDir=publish
+    - name: Publish App
+      # (Đã bỏ comment) Bước này sẽ "publish" ứng dụng của bạn, gom tất cả các file cần thiết vào một thư mục.
+      run: msbuild ${{ env.App_Project_Path }} /t:publish /p:Configuration=${{ matrix.configuration }} /p:Platform=x64 /p:PublishDir=publish
 
-    # (Optional) Example of downloading an external dependency like a driver.
-    # - name: Download ViGEmBus Driver
-    #   run: |
-    #     Invoke-WebRequest -Uri "https://github.com/nefarius/ViGEmBus/releases/download/v1.21.442/ViGEmBus_Setup_1.21.442.exe" -OutFile "publish/ViGEmBusSetup.exe"
-
-    # - name: Upload Build Artifact
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     # The artifact name will include the build configuration (e.g., 'MyApp-Release').
-    #     name: YourAppName-${{ matrix.configuration }}
-    #     # This path should match the 'PublishDir' from the publish step.
-    #     path: publish/
+    - name: Upload Build Artifact
+      # (Đã bỏ comment) Bước này sẽ lấy thư mục 'publish' và tải nó lên GitHub làm một "artifact" mà bạn có thể download.
+      uses: actions/upload-artifact@v4
+      with:
+        # Tên của artifact sẽ bao gồm cả cấu hình build (ví dụ: 'WPFUI-Release').
+        name: ${{ env.App_Project_Path }}-${{ matrix.configuration }}
+        # Đường dẫn này phải khớp với 'PublishDir' từ bước publish ở trên.
+        path: publish/
