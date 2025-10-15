@@ -52,21 +52,23 @@ jobs:
     - name: Build the solution
       run: msbuild ${{ env.Solution_Name }} /p:Configuration=${{ matrix.configuration }}
 
-    # - name: Run Tests # (Đã vô hiệu hóa theo yêu cầu)
+    # - name: Run Tests # (Đã vô hiệu hóa)
     #   # This uses the Visual Studio Test Console (vstest), which is the standard for .NET Framework.
     #   run: vstest.console.exe ${{ env.Test_Project_Path }} /p:Configuration=${{ matrix.configuration }}
 
     # Các bước sau đây đã được kích hoạt để đóng gói ứng dụng của bạn.
 
     - name: Publish App
-      # (Đã bỏ comment) Bước này sẽ "publish" ứng dụng của bạn, gom tất cả các file cần thiết vào một thư mục.
-      run: msbuild ${{ env.App_Project_Path }} /t:publish /p:Configuration=${{ matrix.configuration }} /p:Platform=x64 /p:PublishDir=publish
+      # Bước này sẽ "publish" ứng dụng của bạn, gom tất cả các file cần thiết vào một thư mục.
+      # Thay đổi Platform từ 'x64' thành '"Any CPU"' để khớp với cấu hình project mặc định (x86 với ScreenDublicator).
+      run: msbuild ${{ env.App_Project_Path }} /t:publish /p:Configuration=${{ matrix.configuration }} /p:Platform="Any CPU" /p:PublishDir=publish
 
     - name: Upload Build Artifact
-      # (Đã bỏ comment) Bước này sẽ lấy thư mục 'publish' và tải nó lên GitHub làm một "artifact" mà bạn có thể download.
+      # Bước này sẽ lấy thư mục 'publish' và tải nó lên GitHub làm một "artifact" mà bạn có thể download.
       uses: actions/upload-artifact@v4
       with:
         # Tên của artifact sẽ bao gồm cả cấu hình build (ví dụ: 'WPFUI-Release').
         name: ${{ env.App_Project_Path }}-${{ matrix.configuration }}
         # Đường dẫn này phải khớp với 'PublishDir' từ bước publish ở trên.
         path: publish/
+
