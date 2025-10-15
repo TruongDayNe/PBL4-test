@@ -61,7 +61,7 @@ jobs:
     - name: Publish App
       # Bước này sẽ "publish" ứng dụng của bạn, gom tất cả các file cần thiết vào một thư mục.
       # Thay đổi Platform từ 'x64' thành '"Any CPU"' để khớp với cấu hình project mặc định (x86 với ScreenDublicator).
-      run: msbuild ${{ env.App_Project_Path }} /t:publish /p:Configuration=${{ matrix.configuration }} /p:Platform="Any CPU" /p:PublishDir=publish
+      run: msbuild ${{ env.App_Project_Path }} /t:publish /p:Configuration=${{ matrix.configuration }} /p:Platform=x86 /p:PublishDir=publish
 
     - name: Upload Build Artifact
       # Bước này sẽ lấy thư mục 'publish' và tải nó lên GitHub làm một "artifact" mà bạn có thể download.
