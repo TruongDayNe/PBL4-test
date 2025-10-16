@@ -12,9 +12,9 @@ name: .NET Framework Desktop Build
 
 on:
   push:
-    branches: [ "main" , "develop" , "feature*" ]
+    branches: [ "master" , "develop" , "feature*" ]
   pull_request:
-    branches: [ "main" , "develop" ]
+    branches: [ "master" , "develop" ]
 
 jobs:
   build:
