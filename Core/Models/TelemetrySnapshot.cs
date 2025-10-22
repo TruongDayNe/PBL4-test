@@ -8,6 +8,5 @@ public class TelemetrySnapshot
     public double PacketLossRate { get; set; }
     public long CurrentBitrateKbps { get; set; }
     public double AverageLatencyMs { get; set; }
-    public bool IsGpuEnabled { get; set; }
-    public string EncoderName { get; set; }
+
 }

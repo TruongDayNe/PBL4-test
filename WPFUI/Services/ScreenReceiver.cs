@@ -6,7 +6,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 
-namespace WPFUI.Graphics
+namespace WPFUI.Services
 {
     public delegate void FrameReadyHandler(BitmapSource frameSource);
 

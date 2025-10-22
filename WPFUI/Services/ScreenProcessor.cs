@@ -6,7 +6,7 @@ using System.Drawing;
 
 using MyScreenDublicator = ScreenDublicator.ScreenDublicator;
 
-namespace WPFUI.Graphics
+namespace WPFUI.Services
 {
     /// <summary>
     /// Lớp nhận và lưu trữ thông tin về trạng thái màn hình desktop.

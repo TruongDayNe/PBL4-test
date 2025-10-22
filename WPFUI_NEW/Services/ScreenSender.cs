@@ -14,7 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RealtimeUdpStream.Core.Networking;
 
-namespace WPFUI.Graphics
+namespace WPFUI_NEW.Services
 {
     public delegate void FrameCapturedHandler(Image frame);
 

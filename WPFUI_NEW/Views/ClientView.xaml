@@ -1,0 +1,40 @@
+﻿<UserControl x:Class="WPFUI_NEW.Views.ClientView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:WPFUI_NEW.Views"
+             xmlns:vm="clr-namespace:WPFUI_NEW.ViewModels"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+
+    <UserControl.DataContext>
+        <vm:ClientViewModel/>
+    </UserControl.DataContext>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10">
+            <TextBlock Text="Host IP (Để tham khảo):" VerticalAlignment="Center" Margin="5,0"/>
+
+            <TextBox Width="120" Text="{Binding HostIpAddress}" VerticalAlignment="Center"/>
+
+            <TextBlock Text="Port Lắng Nghe (Client):" VerticalAlignment="Center" Margin="10,0,5,0"/>
+
+            <TextBox Width="60" Text="{Binding ClientPort}" VerticalAlignment="Center"/>
+
+            <Button Content="{Binding ConnectButtonContent}" 
+                    Command="{Binding ConnectCommand}" 
+                    Padding="10,5" 
+                    Margin="10,0"/>
+        </StackPanel>
+
+        <Border Grid.Row="1" Margin="10" BorderBrush="Green" BorderThickness="2" Background="Black">
+            <Image Source="{Binding ReceivedImage}" Stretch="Uniform" />
+        </Border>
+    </Grid>
+</UserControl>
