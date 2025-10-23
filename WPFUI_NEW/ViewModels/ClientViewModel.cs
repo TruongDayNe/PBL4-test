@@ -5,13 +5,24 @@ using System.Windows.Media.Imaging;
 using WPFUI_NEW.Services;
 using System; // Cần cho Exception
 using System.Diagnostics; // Cần cho Debug
+using System.Windows.Threading;
 
 namespace WPFUI_NEW.ViewModels
 {
-    // Đảm bảo là 'public partial' và kế thừa 'ObservableObject'
     public partial class ClientViewModel : ObservableObject
     {
         private ScreenReceiver _screenReceiver;
+        private DispatcherTimer _telemetryTimer;
+
+        // --- CÁC THUỘC TÍNH MỚI CHO OVERLAY ---
+        [ObservableProperty]
+        private string _pingText = "---";
+
+        [ObservableProperty]
+        private string _bitrateText = "---";
+
+        [ObservableProperty]
+        private string _lossText = "---";
 
         // --- Thuộc tính (Properties) cho UI Binding ---
 
@@ -36,6 +47,12 @@ namespace WPFUI_NEW.ViewModels
         public ClientViewModel()
         {
             ConnectCommand = new AsyncRelayCommand(ToggleConnectionAsync);
+            // Khởi tạo timer
+            _telemetryTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1) // Tick 1 giây 1 lần
+            };
+            _telemetryTimer.Tick += OnTelemetryTick;
         }
 
         private async Task ToggleConnectionAsync()
@@ -49,7 +66,10 @@ namespace WPFUI_NEW.ViewModels
                 _screenReceiver.Dispose();
                 _screenReceiver = null;
                 ConnectButtonContent = "Kết nối";
-                ReceivedImage = null;
+                _telemetryTimer.Stop(); 
+                PingText = "---";
+                BitrateText = "---";
+                LossText = "---";
             }
             else
             {
@@ -67,6 +87,7 @@ namespace WPFUI_NEW.ViewModels
                     _screenReceiver.Start();
 
                     ConnectButtonContent = "Ngắt kết nối";
+                    _telemetryTimer.Start(); // <-- Bắt đầu timer
                 }
                 catch (Exception ex)
                 {
@@ -77,6 +98,20 @@ namespace WPFUI_NEW.ViewModels
             }
             // Không cần await gì cả
             await Task.CompletedTask;
+        }
+
+        // --- HÀM MỚI: ĐƯỢC GỌI MỖI GIÂY ---
+        private void OnTelemetryTick(object sender, EventArgs e)
+        {
+            if (_screenReceiver == null) return;
+
+            // Dùng thuộc tính 'Stats' ta vừa tạo trong UdpPeer
+            var snapshot = _screenReceiver.Peer.Stats.GetSnapshot();
+
+            // Cập nhật các thuộc tính UI
+            PingText = $"{snapshot.Rtt.TotalMilliseconds:F0} ms";
+            BitrateText = $"{snapshot.ReceivedBitrateKbps} Kbps";
+            LossText = $"{snapshot.PacketLossRate:F1} %";
         }
 
         private void HandleFrameReady(BitmapSource frameSource)

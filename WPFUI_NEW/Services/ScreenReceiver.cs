@@ -15,6 +15,8 @@ namespace WPFUI_NEW.Services
         private readonly UdpPeer _peer;
         private bool _isReceiving = false;
 
+        public UdpPeer Peer => _peer;
+
         public event FrameReadyHandler OnFrameReady;
 
         public ScreenReceiver(int listenPort)

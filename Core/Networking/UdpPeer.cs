@@ -26,6 +26,7 @@ namespace Core.Networking
 
         // Stats and Events
         private readonly NetworkStats _networkStats = new NetworkStats();
+        public NetworkStats Stats => _networkStats;
         public Action<UdpPacket> OnPacketReceived;
         public int MaximumTransferUnit { get; } = 1400; // Typical MTU for Ethernet
 
@@ -52,7 +53,8 @@ namespace Core.Networking
                 _packetBuilder.WriteChecksum(buffer.AsSpan(0, packetSize));
 
                 await _udpClient.SendAsync(buffer, packetSize, remoteEndPoint);
-                _networkStats.LogPacketSent(packet.Header.SequenceNumber);
+                _networkStats.LogPacketSent(packet.Header.SequenceNumber, packetSize);
+
             }
             finally
             {
@@ -91,7 +93,7 @@ namespace Core.Networking
                 return; // Bỏ qua gói tin hỏng hoặc không hợp lệ
             }
 
-            _networkStats.LogPacketReceived();
+            _networkStats.LogPacketReceived(buffer.Length);
 
             // Tối ưu: Tạo một packet "view" trỏ thẳng vào buffer nhận được, không copy dữ liệu.
             var payloadSegment = new ArraySegment<byte>(buffer, PacketParser.HeaderSize, buffer.Length - PacketParser.HeaderSize);
