@@ -178,21 +178,19 @@ namespace WPFUI_NEW.Services
         /// </summary>
         private void UpdateFrame()
         {
+            // Sử dụng Stopwatch để điều chỉnh tốc độ khung hình (giải quyết to-do)
+            var stopwatch = new Stopwatch();
+
             while (true)
             {
+                stopwatch.Restart(); // Bắt đầu đếm thời gian cho vòng lặp
+                ScreenInfo screenInfo = null;
+
                 try
                 {
-                    ScreenInfo screenInfo = this._desktopDublicator.GetScreenInformation();
-                    this._rwLocker.EnterWriteLock();
-                    if (this._currentScreenImage != null)
-                    {
-                        this._currentScreenImage.Dispose();
-                    }
-                    this._currentScreenImage = screenInfo.ScreenImage;
-
-                    // Báo hiệu rằng khung hình đầu tiên đã sẵn sàng
-                    _firstFrameReady.Set();
-
+                    //  Lấy thông tin (bug)
+                    // Thực hiện bên ngoài lock để không chặn các luồng đọc quá lâu
+                    screenInfo = this._desktopDublicator.GetScreenInformation();
                 }
                 catch (ScreenProcessorException sdex)
                 {
@@ -204,15 +202,50 @@ namespace WPFUI_NEW.Services
                     Debug.WriteLine("Không thể cập nhật thông tin khung hình (Exception)\n{0}\n{1}", ex.Message, ex.StackTrace);
                     break;
                 }
+
+                // Nếu đến được đây, screenInfo đã được lấy thành công
+                // Cập nhật tài nguyên chia sẻ (dùng lock)
+                try
+                {
+                    // Đây là cấu trúc try-finally an toàn để dùng lock
+                    this._rwLocker.EnterWriteLock(); // Chỉ khóa sau khi đã có dữ liệu
+
+                    // Xử lý ảnh cũ
+                    if (this._currentScreenImage != null)
+                    {
+                        this._currentScreenImage.Dispose();
+                    }
+
+                    // Gán ảnh mới
+                    this._currentScreenImage = screenInfo.ScreenImage;
+
+                    // [SỬA LỖI] Cập nhật vị trí con trỏ
+               
+                    // this._currentCursorPosition = screenInfo.CursorPosition; 
+
+                    // Báo hiệu rằng khung hình đầu tiên đã sẵn sàng
+                    _firstFrameReady.Set();
+                }
                 finally
                 {
+                    // Luôn luôn giải phóng lock, vì EnterWriteLock() đã được gọi thành công
+                    // (nếu EnterWriteLock thất bại, nó sẽ ném lỗi và bị bắt bởi khối catch bên ngoài)
                     this._rwLocker.ExitWriteLock();
                 }
-                Thread.Sleep(this.UDPATE_TIMEOUT);  //to-do
+
+                // Điều chỉnh tốc độ khung hình 
+                stopwatch.Stop();
+                int elapsedTime = (int)stopwatch.ElapsedMilliseconds;
+                int timeToWait = this.UDPATE_TIMEOUT - elapsedTime;
+
+                if (timeToWait > 0)
+                {
+                    Thread.Sleep(timeToWait);
+                }
+                // Nếu timeToWait <= 0 (xử lý lâu hơn 50ms), vòng lặp sẽ chạy ngay lập tức
             }
             Debug.WriteLine("Luồng cập nhật khung hình đã kết thúc");
         }
-
         #endregion
     }
 }
