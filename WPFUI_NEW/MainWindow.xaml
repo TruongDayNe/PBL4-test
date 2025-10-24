@@ -4,11 +4,13 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WPFUI_NEW"
-        xmlns:views="clr-namespace:WPFUI_NEW.Views"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="My Stream App" Height="500" Width="850">
     <Grid>
-       <views:HostView/> 
-       <!--<views:ClientView/> -->
+        <Frame x:Name="MainFrame"
+               NavigationUIVisibility="Hidden"
+               Navigated="MainFrame_Navigated"/>
+        <!-- NavigationUIVisibility="Hidden" để ẩn thanh điều hướng mặc định -->
+        <!-- Navigated="MainFrame_Navigated" để gọi hàm cập nhật tiêu đề trong code-behind -->
     </Grid>
 </Window>
