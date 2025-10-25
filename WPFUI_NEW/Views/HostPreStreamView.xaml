@@ -1,0 +1,134 @@
+﻿<UserControl x:Class="WPFUI_NEW.Views.HostPreStreamView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="1000">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3*"/>
+            <ColumnDefinition Width="1*"/>
+        </Grid.ColumnDefinitions>
+
+        <Grid Grid.Column="0" Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10">
+                <TextBlock Text="Địa chỉ IP của bạn:" FontSize="18" VerticalAlignment="Center"/>
+                <TextBox Text="192.168.1.100" IsReadOnly="True" FontSize="18" FontWeight="Bold" 
+                         Margin="10,0" Padding="5" MinWidth="150"
+                         VerticalAlignment="Center"/>
+                <Button Content="Copy IP" Padding="10,5" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <Border Grid.Row="1" Background="#1C1C1C" Margin="10" CornerRadius="5"
+                    BorderBrush="Gray" BorderThickness="1">
+                <TextBlock Text="Local Stream Preview" 
+                           Foreground="Gray" FontSize="24"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+
+            <Button Grid.Row="2" Content="BẮT ĐẦU STREAM" 
+                    FontSize="20" FontWeight="Bold" Padding="20,10" 
+                    HorizontalAlignment="Center" Margin="10"
+                    Background="Green" Foreground="White"/>
+        </Grid>
+
+        <Border Grid.Column="1" Background="#2D2D2D" Padding="10"
+                BorderBrush="Gray" BorderThickness="1,0,0,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <GroupBox Grid.Row="0" Header="Yêu cầu kết nối (Chờ duyệt)" Foreground="White" FontWeight="Bold">
+                    <ListBox Background="Transparent" BorderThickness="0"
+                             ItemsSource="{Binding PendingClients}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#444" CornerRadius="3" Padding="5" Margin="0,3">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0" Text="{Binding ClientIP}" 
+                                                   Foreground="White" VerticalAlignment="Center"/>
+
+                                        <Button Grid.Column="1" Content="✔" Background="Green" 
+                                                Foreground="White" Margin="5,0"
+                                                Command="{Binding DataContext.AcceptClientCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                CommandParameter="{Binding}"/>
+                                        <Button Grid.Column="2" Content="X" Background="Red" 
+                                                Foreground="White"
+                                                Command="{Binding DataContext.RejectClientCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                CommandParameter="{Binding}"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+
+                        <ListBox.Items>
+                            <TextBlock Text="Client A (192.168.1.150)" Foreground="White" VerticalAlignment="Center"/>
+                        </ListBox.Items>
+                    </ListBox>
+                </GroupBox>
+
+                <GroupBox Grid.Row="1" Header="Đã kết nối" Foreground="White" FontWeight="Bold" Margin="0,10,0,0">
+                    <ListBox Background="Transparent" BorderThickness="0"
+                             ItemsSource="{Binding ConnectedClients}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#3E3E3E" CornerRadius="3" Padding="5" Margin="0,3">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding ClientName}" Foreground="White" FontWeight="Bold"/>
+                                        <TextBlock Text="{Binding ClientIP}" Foreground="LightGray" FontSize="10"/>
+                                        <Separator Margin="0,3"/>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding Ping, StringFormat='Ping: {0}ms'}" Foreground="LawnGreen"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding PacketLoss, StringFormat='Loss: {0}%'}" Foreground="OrangeRed"/>
+                                        </Grid>
+                                        <Button Content="Kick" HorizontalAlignment="Right" Margin="0,5,0,0" 
+                                                Background="DarkRed" Foreground="White" Padding="5,2" FontSize="10"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+
+                        <ListBox.Items>
+                            <StackPanel>
+                                <TextBlock Text="Client B (Vip)" Foreground="White" FontWeight="Bold"/>
+                                <TextBlock Text="192.168.1.200" Foreground="LightGray" FontSize="10"/>
+                                <Separator Margin="0,3"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Ping: 15ms" Foreground="LawnGreen"/>
+                                    <TextBlock Grid.Column="1" Text="Loss: 0.1%" Foreground="OrangeRed"/>
+                                </Grid>
+                                <Button Content="Kick" HorizontalAlignment="Right" Margin="0,5,0,0" 
+                                        Background="DarkRed" Foreground="White" Padding="5,2" FontSize="10"/>
+                            </StackPanel>
+                        </ListBox.Items>
+
+                    </ListBox>
+                </GroupBox>
+
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
