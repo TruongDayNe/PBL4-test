@@ -1,56 +1,46 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RealTimeUdpStream.Core.Models; // Thêm using cho TelemetrySnapshot
+using RealTimeUdpStream.Core.Networking; // Thêm using cho NetworkStats
+using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Windows; // Thêm using này cho MessageBox
 using System.Windows.Media.Imaging;
-using WPFUI_NEW.Services;
-using System; // Cần cho Exception
-using System.Diagnostics; // Cần cho Debug
 using System.Windows.Threading;
+using WPFUI_NEW.Services;
+using Core.Networking;
 
 namespace WPFUI_NEW.ViewModels
 {
     public partial class ClientViewModel : ObservableObject
     {
         private ScreenReceiver _screenReceiver;
+        private readonly NetworkService _networkService;
         private DispatcherTimer _telemetryTimer;
 
-        // --- CÁC THUỘC TÍNH MỚI CHO OVERLAY ---
-        [ObservableProperty]
-        private string _pingText = "---";
+        // --- Thuộc tính cho Telemetry ---
+        [ObservableProperty] private string _pingText = "---";
+        [ObservableProperty] private string _bitrateText = "---";
+        [ObservableProperty] private string _lossText = "---";
 
-        [ObservableProperty]
-        private string _bitrateText = "---";
+        // --- Thuộc tính cho UI ---
+        [ObservableProperty] private BitmapSource _receivedImage;
+        [ObservableProperty] private string _connectButtonContent = "Kết nối";
+        [ObservableProperty] private string _hostIpAddress = "127.0.0.1"; // IP Host cần nhập
+        [ObservableProperty] private int _clientPort = 12001; // Port Client lắng nghe UDP
 
-        [ObservableProperty]
-        private string _lossText = "---";
-
-        // --- Thuộc tính (Properties) cho UI Binding ---
-
-        [ObservableProperty]
-        private BitmapSource _receivedImage;
-
-        [ObservableProperty]
-        private string _connectButtonContent = "Kết nối";
-
-        // Thuộc tính để bind với TextBox nhập IP
-        // IP của Host KHÔNG dùng ở đây, mà dùng ở file ScreenSender của Host.
-        // Client chỉ cần biết Port MÌNH sẽ lắng nghe.
-        [ObservableProperty]
-        private string _hostIpAddress = "127.0.0.1"; // Tạm thời để đây, ta sẽ dùng sau
-
-        [ObservableProperty]
-        private int _clientPort = 12001; // Đây là port MÁY NÀY lắng nghe
-
-        // --- Command ---
         public IAsyncRelayCommand ConnectCommand { get; }
 
         public ClientViewModel()
         {
+            _networkService = new NetworkService();
             ConnectCommand = new AsyncRelayCommand(ToggleConnectionAsync);
-            // Khởi tạo timer
+
+            // Khởi tạo timer telemetry
             _telemetryTimer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromSeconds(1) // Tick 1 giây 1 lần
+                Interval = TimeSpan.FromSeconds(1)
             };
             _telemetryTimer.Tick += OnTelemetryTick;
         }
@@ -60,48 +50,57 @@ namespace WPFUI_NEW.ViewModels
             if (_screenReceiver != null)
             {
                 // --- LOGIC NGẮT KẾT NỐI ---
-                Debug.WriteLine("Đang ngắt kết nối...");
+                Debug.WriteLine("[Client] Đang ngắt kết nối UDP...");
+                _telemetryTimer.Stop(); // Dừng timer trước
                 _screenReceiver.Stop();
                 _screenReceiver.OnFrameReady -= HandleFrameReady;
                 _screenReceiver.Dispose();
                 _screenReceiver = null;
                 ConnectButtonContent = "Kết nối";
-                _telemetryTimer.Stop(); 
+                ReceivedImage = null; // Xóa ảnh
+                // Reset telemetry text
                 PingText = "---";
                 BitrateText = "---";
                 LossText = "---";
             }
             else
             {
-                // --- LOGIC KẾT NỐI ---
-                Debug.WriteLine($"Đang kết nối tới port: {_clientPort}...");
-                try
+                // --- LOGIC KẾT NỐI MỚI ---
+                Debug.WriteLine($"[Client] Bắt đầu quy trình kết nối tới Host: {HostIpAddress}");
+                ConnectButtonContent = "Đang kết nối...";
+
+                // 1. Kết nối TCP để gửi IP
+                bool tcpSuccess = await _networkService.ConnectToHostAsync(HostIpAddress);
+
+                if (tcpSuccess)
                 {
-                    // Lấy port để lắng nghe từ UI
-                    _screenReceiver = new ScreenReceiver(_clientPort);
-
-                    // Đăng ký sự kiện
-                    _screenReceiver.OnFrameReady += HandleFrameReady;
-
-                    // Bắt đầu chạy vòng lặp nhận trên luồng nền
-                    _screenReceiver.Start();
-
-                    ConnectButtonContent = "Ngắt kết nối";
-                    _telemetryTimer.Start(); // <-- Bắt đầu timer
+                    Debug.WriteLine($"[Client] Gửi IP thành công. Bắt đầu lắng nghe UDP trên port {_clientPort}...");
+                    // 2. Nếu TCP thành công, bắt đầu ScreenReceiver (UDP)
+                    try
+                    {
+                        _screenReceiver = new ScreenReceiver(_clientPort);
+                        _screenReceiver.OnFrameReady += HandleFrameReady;
+                        _screenReceiver.Start();
+                        ConnectButtonContent = "Ngắt kết nối";
+                        _telemetryTimer.Start(); // Bắt đầu timer telemetry
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Lỗi khi bắt đầu nhận UDP (Port {_clientPort} có thể đang được sử dụng?): {ex.Message}", "Lỗi UDP", MessageBoxButton.OK, MessageBoxImage.Error);
+                        ConnectButtonContent = "Kết nối";
+                    }
                 }
-                catch (Exception ex)
+                else
                 {
-                    // Thường lỗi do Port đã được sử dụng
-                    System.Windows.MessageBox.Show($"Lỗi khi kết nối (Port {_clientPort} có thể đang được Host sử dụng?): {ex.Message}");
+                    MessageBox.Show($"Không thể kết nối TCP đến Host tại {HostIpAddress}:{NetworkService.HandshakePort}. Hãy đảm bảo Host đang chạy và kiểm tra tường lửa.", "Lỗi Kết Nối TCP", MessageBoxButton.OK, MessageBoxImage.Error);
                     ConnectButtonContent = "Kết nối";
                 }
             }
-            // Không cần await gì cả
-            await Task.CompletedTask;
         }
 
-        // --- HÀM MỚI: ĐƯỢC GỌI MỖI GIÂY ---
-        private void OnTelemetryTick(object sender, EventArgs e)
+
+// --- HÀM MỚI: ĐƯỢC GỌI MỖI GIÂY ---
+private void OnTelemetryTick(object sender, EventArgs e)
         {
             if (_screenReceiver == null) return;
 

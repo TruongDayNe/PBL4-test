@@ -143,6 +143,7 @@
   <ItemGroup>
     <Compile Include="Models\FecGroup.cs" />
     <Compile Include="Networking\FecXor.cs" />
+    <Compile Include="Networking\NetworkService.cs" />
     <Compile Include="Networking\NetworkStats.cs" />
     <Compile Include="Networking\PackerParser.cs" />
     <Compile Include="Util\BigEndian.cs" />
