@@ -18,15 +18,27 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <Button Grid.Row="0" 
-                Padding="10" 
-                Margin="10"
-                FontSize="16"
-                Content="{Binding StreamButtonContent}" 
-                Command="{Binding StartStreamCommand}" />
+        <StackPanel Grid.Row="0" Margin="10">
+            <Button Padding="10" 
+                    Margin="0"
+                    HorizontalAlignment="Stretch" FontSize="16"
+                    FontWeight="SemiBold"
+                    Content="{Binding StreamButtonContent}" 
+                    Command="{Binding StartStreamCommand}" />
 
-        <Border Grid.Row="1" Margin="10" BorderBrush="Gray" BorderThickness="1">
+            <TextBlock Text="{Binding StatusText}" 
+                       HorizontalAlignment="Center" 
+                       Margin="0,8,0,0" 
+                       FontSize="14"
+                       Opacity="0.8"/>
+        </StackPanel>
+
+        <Border Grid.Row="1" 
+                Margin="10,0,10,10" BorderBrush="Gray" 
+                BorderThickness="1" 
+                Background="Black">
             <Image Source="{Binding PreviewImage}" Stretch="Uniform" />
+
         </Border>
     </Grid>
 </UserControl>

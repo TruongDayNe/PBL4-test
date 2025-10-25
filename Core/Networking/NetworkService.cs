@@ -3,57 +3,104 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading; // Thêm CancellationToken
 using System.Threading.Tasks;
-using System.Linq; // Thêm using này
+using System.Linq;
 
 namespace Core.Networking
 {
     public class NetworkService
     {
-        // Port cố định cho việc "chào hỏi" ban đầu qua TCP
         public const int HandshakePort = 12345;
-
-        // Sự kiện được kích hoạt ở Host khi Client kết nối và gửi IP
         public event Action<string> ClientConnected;
 
-        /// <summary>
-        /// [HOST] Bắt đầu lắng nghe kết nối TCP từ Client.
-        /// </summary>
-        public async Task StartListeningForClientAsync()
+        private TcpListener _tcpListener; // Biến thành viên để có thể Stop() từ bên ngoài
+
+        /// <summary>
+        /// [HOST] Bắt đầu lắng nghe KẾT NỐI TCP TỪ NHIỀU CLIENT liên tục.
+        /// </summary>
+        public async Task StartTcpListenerLoopAsync(CancellationToken token)
         {
-            TcpListener listener = null;
             try
             {
-                listener = new TcpListener(IPAddress.Any, HandshakePort);
-                listener.Start();
+                _tcpListener = new TcpListener(IPAddress.Any, HandshakePort);
+                _tcpListener.Start();
                 Debug.WriteLine($"[Host] Đang lắng nghe kết nối TCP trên port {HandshakePort}...");
 
-                // Chỉ chấp nhận một kết nối cho ví dụ đơn giản này
-                TcpClient client = await listener.AcceptTcpClientAsync();
-                Debug.WriteLine("[Host] Client đã kết nối!");
+                while (!token.IsCancellationRequested)
+                {
+                    try
+                    {
+                        // Chấp nhận client mới
+                        TcpClient client = await _tcpListener.AcceptTcpClientAsync();
+                        Debug.WriteLine("[Host] Client mới đang kết nối...");
 
+                        // Xử lý client này trên một Task riêng để quay lại vòng lặp Accept ngay
+                        Task.Run(() => HandleNewClient(client), token);
+                    }
+                    catch (SocketException ex) when (token.IsCancellationRequested)
+                    {
+                        Debug.WriteLine("[Host] TCP Listener_tcpListener stopped (via token).");
+                        break; // Thoát vòng lặp khi bị hủy
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        Debug.WriteLine("[Host] TCP Listener_tcpListener stopped (disposed).");
+                        break; // Thoát vòng lặp
+                    }
+                    catch (Exception ex)
+                    {
+                        if (!token.IsCancellationRequested)
+                            Debug.WriteLine($"[Host] Lỗi khi chấp nhận client: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex) // Lỗi khi Start() listener (ví dụ: port đã dùng)
+            {
+                Debug.WriteLine($"[Host] Lỗi nghiêm trọng khi khởi động TCP listener: {ex.Message}");
+                throw; // Ném lỗi ra ngoài để HostViewModel bắt được
+            }
+            finally
+            {
+                _tcpListener?.Stop();
+                Debug.WriteLine("[Host] Đã dừng lắng nghe TCP.");
+            }
+        }
+
+        /// <summary>
+        /// Xử lý logic đọc IP từ một client TCP
+        /// </summary>
+        private void HandleNewClient(TcpClient client)
+        {
+            try
+            {
                 using (NetworkStream stream = client.GetStream())
                 {
                     byte[] buffer = new byte[1024];
-                    int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-                    string clientIp = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    int bytesRead = stream.Read(buffer, 0, buffer.Length); // Dùng Read đồng bộ vì đang ở Task riêng
+                    string clientIp = Encoding.UTF8.GetString(buffer, 0, bytesRead);
                     Debug.WriteLine($"[Host] Nhận được IP của Client: {clientIp}");
 
-                    // Kích hoạt sự kiện để báo cho HostViewModel biết IP của Client
-                    ClientConnected?.Invoke(clientIp);
+                    // Kích hoạt sự kiện để báo cho HostViewModel biết IP của Client
+                    ClientConnected?.Invoke(clientIp);
                 }
-                client.Close();
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[Host] Lỗi khi lắng nghe TCP: {ex.Message}");
-                // Có thể thêm thông báo lỗi cho người dùng ở đây
+                Debug.WriteLine($"[Host] Lỗi khi xử lý client TCP: {ex.Message}");
             }
             finally
             {
-                listener?.Stop();
-                Debug.WriteLine("[Host] Đã dừng lắng nghe TCP.");
+                client.Close();
             }
+        }
+
+        /// <summary>
+        /// [HOST] Hàm mới để dừng TcpListener từ bên ngoài
+        /// </summary>
+        public void StopListening()
+        {
+            _tcpListener?.Stop();
         }
 
         /// <summary>

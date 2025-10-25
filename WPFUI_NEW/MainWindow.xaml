@@ -4,13 +4,65 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WPFUI_NEW"
+        xmlns:vm="clr-namespace:WPFUI_NEW.ViewModels"
+        xmlns:view="clr-namespace:WPFUI_NEW.Views"
         mc:Ignorable="d"
-        Title="My Stream App" Height="500" Width="850">
+        Title="Virtual Sofa" Height="720" Width="1080"
+        WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing">
+
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
+
+    <Window.Resources>
+        <DataTemplate DataType="{x:Type vm:HostViewModel}">
+            <view:HostView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ClientViewModel}">
+            <view:ClientView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SelectionViewModel}">
+            <view:SelectionView/>
+        </DataTemplate>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Window.Resources>
+
     <Grid>
-        <Frame x:Name="MainFrame"
-               NavigationUIVisibility="Hidden"
-               Navigated="MainFrame_Navigated"/>
-        <!-- NavigationUIVisibility="Hidden" để ẩn thanh điều hướng mặc định -->
-        <!-- Navigated="MainFrame_Navigated" để gọi hàm cập nhật tiêu đề trong code-behind -->
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Button Grid.Row="0" 
+                Content="← Quay lại"
+                Command="{Binding ShowSelectionViewCommand}"
+                HorizontalAlignment="Left" 
+                Margin="10,5" 
+                Padding="10,5"
+                Background="Transparent"
+                BorderThickness="0"
+                Foreground="#007ACC"
+                FontSize="14"
+                Cursor="Hand">
+            <Button.Style>
+                <Style TargetType="Button">
+                    <Setter Property="Visibility" Value="Visible"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsSelectionViewActive}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Button.Style>
+        </Button>
+        <ContentControl Grid.Row="2" 
+                        Content="{Binding CurrentViewModel}"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch"/>
+        <Image Grid.Row="1"
+               Source="Images/logo_white.png" 
+               Margin="417,108,417,397" Grid.RowSpan="2"/>
     </Grid>
 </Window>
