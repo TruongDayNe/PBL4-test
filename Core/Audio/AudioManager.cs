@@ -1,0 +1,266 @@
+﻿using RealTimeUdpStream.Core.Models;
+using Core.Networking;
+using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
+
+namespace RealTimeUdpStream.Core.Audio
+{
+    /// <summary>
+    /// Quản lý tổng thể audio streaming - capture, transmission, và playback
+    /// </summary>
+    public class AudioManager : IDisposable
+    {
+        private readonly UdpPeer _udpPeer;
+        private readonly AudioConfig _config;
+        private AudioCapture _audioCapture;
+        private AudioPlayback _audioPlayback;
+        private bool _disposed = false;
+        private bool _isStreaming = false;
+        private bool _isReceiving = false;
+
+        // Target endpoint for audio streaming
+        private System.Net.IPEndPoint _targetEndPoint;
+
+        // Packet types for audio
+        private const byte AUDIO_PACKET_TYPE = 0x11; // Phải khớp với UdpPacketType.Audio
+
+        public event Action<string> OnStatusChanged;
+        public event Action<Exception> OnError;
+
+        public AudioManager(UdpPeer udpPeer, AudioConfig config = null)
+        {
+            _udpPeer = udpPeer ?? throw new ArgumentNullException(nameof(udpPeer));
+            _config = config ?? AudioConfig.CreateDefault();
+
+            InitializeComponents();
+            SubscribeToNetworkEvents();
+        }
+
+        public void SetTargetEndPoint(System.Net.IPEndPoint targetEndPoint)
+        {
+            _targetEndPoint = targetEndPoint;
+        }
+
+        private void InitializeComponents()
+        {
+            _audioPlayback = new AudioPlayback(_config);
+            Debug.WriteLine("AudioManager initialized");
+        }
+
+        private void SubscribeToNetworkEvents()
+        {
+            _udpPeer.OnPacketReceived += HandleReceivedPacket;
+        }
+
+        public void StartAudioStreaming(AudioInputType inputType = AudioInputType.Microphone)
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(AudioManager));
+            if (_isStreaming) return;
+
+            try
+            {
+                _audioCapture = new AudioCapture(_config, inputType);
+                _audioCapture.OnAudioDataAvailable += SendAudioPacket;
+                _audioCapture.StartCapture();
+
+                _isStreaming = true;
+                OnStatusChanged?.Invoke($"Audio streaming started ({inputType})");
+                Debug.WriteLine($"Audio streaming started with {inputType}");
+            }
+            catch (Exception ex)
+            {
+                OnError?.Invoke(ex);
+                Debug.WriteLine($"Failed to start audio streaming: {ex.Message}");
+                throw;
+            }
+        }
+
+        public void StopAudioStreaming()
+        {
+            if (!_isStreaming) return;
+
+            try
+            {
+                _audioCapture?.StopCapture();
+                _audioCapture?.Dispose();
+                _audioCapture = null;
+
+                _isStreaming = false;
+                OnStatusChanged?.Invoke("Audio streaming stopped");
+                Debug.WriteLine("Audio streaming stopped");
+            }
+            catch (Exception ex)
+            {
+                OnError?.Invoke(ex);
+                Debug.WriteLine($"Error stopping audio streaming: {ex.Message}");
+            }
+        }
+
+        public void StartAudioReceiving()
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(AudioManager));
+
+            _isReceiving = true;
+
+            // Start UDP listening
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _udpPeer.StartReceivingAsync();
+                    Console.WriteLine("[AudioManager] Started UDP receiving for audio packets");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[AudioManager] Failed to start UDP receiving: {ex.Message}");
+                    OnError?.Invoke(ex);
+                }
+            });
+
+            OnStatusChanged?.Invoke("Audio receiving started");
+            Debug.WriteLine("Audio receiving started");
+        }
+
+        public void StopAudioReceiving()
+        {
+            if (!_isReceiving) return;
+
+            _audioPlayback?.ClearBuffer();
+            _isReceiving = false;
+            OnStatusChanged?.Invoke("Audio receiving stopped");
+            Debug.WriteLine("Audio receiving stopped");
+        }
+
+        private void SendAudioPacket(AudioPacket audioPacket)
+        {
+            if (!_isStreaming || _disposed || _targetEndPoint == null) return;
+
+            try
+            {
+                // Serialize AudioPacket thành byte array
+                var packetData = SerializeAudioPacket(audioPacket);
+
+                // Tạo UdpPacket với audio data
+                var header = new UdpPacketHeader
+                {
+                    Version = 1,
+                    PacketType = AUDIO_PACKET_TYPE,
+                    SequenceNumber = audioPacket.Header.SequenceNumber,
+                    TimestampMs = audioPacket.Header.TimestampMs,
+                    TotalChunks = 1,
+                    ChunkId = 0
+                };
+
+                var udpPacket = new UdpPacket(header, new ArraySegment<byte>(packetData));
+
+                // Gửi async đến target endpoint
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _udpPeer.SendToAsync(udpPacket, _targetEndPoint);
+                        Console.WriteLine($"[AudioManager] Sent audio packet: {packetData.Length} bytes to {_targetEndPoint}");
+                    }
+                    catch (Exception ex)
+                    {
+                        OnError?.Invoke(ex);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                OnError?.Invoke(ex);
+                Debug.WriteLine($"Error sending audio packet: {ex.Message}");
+            }
+        }
+
+        private void HandleReceivedPacket(UdpPacket packet)
+        {
+            if (!_isReceiving || packet.Header.PacketType != AUDIO_PACKET_TYPE) return;
+
+            try
+            {
+                Console.WriteLine($"[AudioManager] Received audio packet: {packet.Payload.Count} bytes from {packet.Header.SequenceNumber}");
+
+                // Deserialize AudioPacket từ UDP data
+                var audioPacket = DeserializeAudioPacket(packet.Payload.Array);
+                if (audioPacket != null)
+                {
+                    _audioPlayback.QueueAudioPacket(audioPacket);
+                    Console.WriteLine($"[AudioManager] Queued audio packet for playback: {audioPacket.AudioData.Count} bytes");
+                }
+                else
+                {
+                    Console.WriteLine("[AudioManager] Failed to deserialize audio packet");
+                }
+            }
+            catch (Exception ex)
+            {
+                OnError?.Invoke(ex);
+                Debug.WriteLine($"Error handling received audio packet: {ex.Message}");
+                Console.WriteLine($"[AudioManager] Error handling packet: {ex.Message}");
+            }
+        }
+
+        private byte[] SerializeAudioPacket(AudioPacket packet)
+        {
+            // Serialize header + audio data
+            var headerBytes = packet.Header.ToByteArray();
+            var result = new byte[headerBytes.Length + packet.AudioData.Count];
+
+            Buffer.BlockCopy(headerBytes, 0, result, 0, headerBytes.Length);
+            Buffer.BlockCopy(packet.AudioData.Array, packet.AudioData.Offset,
+                           result, headerBytes.Length, packet.AudioData.Count);
+
+            return result;
+        }
+
+        private AudioPacket DeserializeAudioPacket(byte[] data)
+        {
+            if (data.Length < AudioPacketHeader.HeaderSize) return null;
+
+            try
+            {
+                var header = AudioPacketHeader.FromByteArray(data);
+                var audioDataLength = data.Length - AudioPacketHeader.HeaderSize;
+
+                if (audioDataLength != header.DataLength) return null;
+
+                var audioData = new byte[audioDataLength];
+                Buffer.BlockCopy(data, AudioPacketHeader.HeaderSize, audioData, 0, audioDataLength);
+
+                return new AudioPacket(header, new ArraySegment<byte>(audioData));
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error deserializing audio packet: {ex.Message}");
+                return null;
+            }
+        }
+
+        // Properties
+        public bool IsStreaming => _isStreaming;
+        public bool IsReceiving => _isReceiving;
+        public double PlaybackBufferMs => _audioPlayback?.BufferedDurationMs ?? 0;
+        public AudioConfig Config => _config;
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+
+            StopAudioStreaming();
+            StopAudioReceiving();
+
+            _audioPlayback?.Dispose();
+
+            if (_udpPeer != null)
+            {
+                _udpPeer.OnPacketReceived -= HandleReceivedPacket;
+            }
+
+            _disposed = true;
+            Debug.WriteLine("AudioManager disposed");
+        }
+    }
+}

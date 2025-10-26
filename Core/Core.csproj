@@ -141,6 +141,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Audio\AudioCapture.cs" />
+    <Compile Include="Audio\AudioManager.cs" />
+    <Compile Include="Audio\AudioPlayback.cs" />
+    <Compile Include="Models\AudioPacket.cs" />
     <Compile Include="Models\FecGroup.cs" />
     <Compile Include="Networking\FecXor.cs" />
     <Compile Include="Networking\NetworkService.cs" />
@@ -155,7 +159,6 @@
     <Compile Include="Util\BytePool.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Audio\" />
     <Folder Include="Interop\" />
     <Folder Include="Logging\" />
   </ItemGroup>
