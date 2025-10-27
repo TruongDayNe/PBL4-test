@@ -61,7 +61,9 @@ namespace WPFUI_NEW.ViewModels
 
         public void Cleanup()
         {
-            // (Giữ nguyên logic cleanup)
+            // Gọi cleanup trên các VM con
+            (HostViewModel as HostViewModel)?.Cleanup();
+            (ClientViewModel as ClientViewModel)?.Cleanup();
         }
     }
 }

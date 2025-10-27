@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Core.Networking;
+using RealTimeUdpStream.Core.Audio;
 using RealTimeUdpStream.Core.Models; // Thêm using cho TelemetrySnapshot
 using RealTimeUdpStream.Core.Networking; // Thêm using cho NetworkStats
 using System;
@@ -9,7 +11,6 @@ using System.Windows; // Thêm using này cho MessageBox
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using WPFUI_NEW.Services;
-using Core.Networking;
 
 namespace WPFUI_NEW.ViewModels
 {
@@ -18,6 +19,9 @@ namespace WPFUI_NEW.ViewModels
         private ScreenReceiver _screenReceiver;
         private readonly NetworkService _networkService;
         private DispatcherTimer _telemetryTimer;
+
+        private UdpPeer _sharedUdpPeer; // Peer chia sẻ
+        private AudioManager _audioManager;
 
         // --- Thuộc tính cho Telemetry ---
         [ObservableProperty] private string _pingText = "---";
@@ -52,11 +56,21 @@ namespace WPFUI_NEW.ViewModels
                 // --- LOGIC NGẮT KẾT NỐI ---
                 Debug.WriteLine("[Client] Đang ngắt kết nối UDP...");
                 _telemetryTimer.Stop(); // Dừng timer trước
-                _screenReceiver.Stop();
-                _screenReceiver.OnFrameReady -= HandleFrameReady;
-                _screenReceiver.Dispose();
+
+                // Dọn dẹp AudioManager VÀ ScreenReceiver
+                _audioManager?.StopAudioReceiving();
+                _audioManager?.Dispose();
+                _audioManager = null;
+
+                _screenReceiver?.Stop(); // Stop cho chắc
+                _screenReceiver?.Dispose(); // Dispose sẽ hủy đăng ký sự kiện
                 _screenReceiver = null;
+
+                // Dọn dẹp UdpPeer (SAU CÙNG)
+                _sharedUdpPeer?.Dispose();
+                _sharedUdpPeer = null;
                 ConnectButtonContent = "Kết nối";
+
                 ReceivedImage = null; // Xóa ảnh
                 // Reset telemetry text
                 PingText = "---";
@@ -78,9 +92,20 @@ namespace WPFUI_NEW.ViewModels
                     // 2. Nếu TCP thành công, bắt đầu ScreenReceiver (UDP)
                     try
                     {
-                        _screenReceiver = new ScreenReceiver(_clientPort);
+                        // Tạo UdpPeer chung
+                        _sharedUdpPeer = new UdpPeer(_clientPort); // _clientPort = 12001
+
+                        // Dùng UdpPeer cho ScreenReceiver
+                        _screenReceiver = new ScreenReceiver(_sharedUdpPeer);
                         _screenReceiver.OnFrameReady += HandleFrameReady;
-                        _screenReceiver.Start();
+
+                        _audioManager = new AudioManager(_sharedUdpPeer, AudioConfig.CreateDefault());
+                        // AudioManager sẽ tự đăng ký OnPacketReceived với _sharedUdpPeer
+
+                        _audioManager.StartAudioReceiving();
+
+                        //_screenReceiver.Start(); 
+                        //Không gọi _screenReceiver.Start() nữa vì AudioManager đã khởi động _sharedUdpPeer
                         ConnectButtonContent = "Ngắt kết nối";
                         _telemetryTimer.Start(); // Bắt đầu timer telemetry
                     }
@@ -99,15 +124,15 @@ namespace WPFUI_NEW.ViewModels
         }
 
 
-// --- HÀM MỚI: ĐƯỢC GỌI MỖI GIÂY ---
-private void OnTelemetryTick(object sender, EventArgs e)
+        // --- ĐƯỢC GỌI MỖI GIÂY ---
+        private void OnTelemetryTick(object sender, EventArgs e)
         {
-            if (_screenReceiver == null) return;
+            if (_sharedUdpPeer == null) return; // Kiểm tra _sharedUdpPeer     
 
-            // Dùng thuộc tính 'Stats' ta vừa tạo trong UdpPeer
-            var snapshot = _screenReceiver.Peer.Stats.GetSnapshot();
+            // Dùng thuộc tính 'Stats' từ UdpPeer chung
+            var snapshot = _sharedUdpPeer.Stats.GetSnapshot();
 
-            // Cập nhật các thuộc tính UI
+            // Cập nhật các thuộc tính UI (giữ nguyên)
             PingText = $"{snapshot.Rtt.TotalMilliseconds:F0} ms";
             BitrateText = $"{snapshot.ReceivedBitrateKbps} Kbps";
             LossText = $"{snapshot.PacketLossRate:F1} %";
@@ -121,6 +146,14 @@ private void OnTelemetryTick(object sender, EventArgs e)
             {
                 ReceivedImage = frameSource;
             });
+        }
+        public void Cleanup()
+        {
+            // Nếu đang kết nối, gọi Toggle để ngắt kết nối và dọn dẹp
+            if (_screenReceiver != null)
+            {
+                ToggleConnectionAsync().Wait(); // Chờ
+            }
         }
     }
 }

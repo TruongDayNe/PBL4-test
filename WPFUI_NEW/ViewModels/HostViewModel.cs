@@ -1,16 +1,19 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.Networking;
+using Core.Networking;
+using RealTimeUdpStream.Core.Audio;
+using RealTimeUdpStream.Core.Models;
 using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using WPFUI_NEW.Services;
-using System.Linq; // Thêm using
 
 namespace WPFUI_NEW.ViewModels
 {
@@ -20,6 +23,9 @@ namespace WPFUI_NEW.ViewModels
         private ScreenSender _screenSender;
         private CancellationTokenSource _cancellationTokenSource;
         private readonly NetworkService _networkService;
+
+        private UdpPeer _sharedUdpPeer; // Peer chia sẻ
+        private AudioManager _audioManager; // Quản lý audio
 
         [ObservableProperty] private BitmapSource _previewImage;
         [ObservableProperty] private string _streamButtonContent = "Bắt đầu Host";
@@ -43,6 +49,11 @@ namespace WPFUI_NEW.ViewModels
                 _networkService.StopListening();
                 Debug.WriteLine("[Host] Đã yêu cầu dừng stream/chờ...");
 
+                _audioManager?.StopAudioStreaming();
+                _audioManager?.Dispose();
+                _audioManager = null;
+                Debug.WriteLine("[Host] AudioManager dừng và hủy.");
+
                 if (_screenSender != null)
                 {
                     _screenSender.OnFrameCaptured -= HandleFrameCaptured;
@@ -52,6 +63,10 @@ namespace WPFUI_NEW.ViewModels
 
                 _screenProcessor?.Dispose();
                 _screenProcessor = null;
+
+                _sharedUdpPeer?.Dispose();
+                _sharedUdpPeer = null;
+                Debug.WriteLine("[Host] ScreenSender và ScreenProcessor dừng và hủy.");
 
                 StreamButtonContent = "Bắt đầu Host";
                 PreviewImage = null;
@@ -66,13 +81,24 @@ namespace WPFUI_NEW.ViewModels
                     _cancellationTokenSource = new CancellationTokenSource();
                     const int SERVER_PORT = 12000;
 
+                    _sharedUdpPeer = new UdpPeer(SERVER_PORT); // Tạo UdpPeer
+
                     _screenProcessor = ScreenProcessor.Instance;
                     _screenProcessor.Start();
                     Debug.WriteLine("[Host] ScreenProcessor started.");
 
-                    _screenSender = new ScreenSender(SERVER_PORT, _screenProcessor);
+                    // Dùng UdpPeer chia sẻ cho ScreenSender
+                    _screenSender = new ScreenSender(_sharedUdpPeer, _screenProcessor);
                     _screenSender.OnFrameCaptured += HandleFrameCaptured;
                     Debug.WriteLine("[Host] ScreenSender created.");
+
+                    // Dùng UdpPeer chia sẻ cho AudioManager
+                    _audioManager = new AudioManager(_sharedUdpPeer, AudioConfig.CreateDefault());
+
+                    //_audioManager.StartAudioStreaming(AudioInputType.SystemAudio); // Bắt đầu ghi âm system
+                    _audioManager.StartAudioStreaming(AudioInputType.Microphone); // Bắt đầu ghi âm mic
+
+                    Debug.WriteLine("[Host] AudioManager created and started.");
 
                     Task.Run(() => _screenSender.SendScreenLoopAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
                     Debug.WriteLine("[Host] SendScreenLoopAsync started.");
@@ -117,11 +143,15 @@ namespace WPFUI_NEW.ViewModels
 
             try
             {
-                const int CLIENT_PORT = 12001;
+                const int CLIENT_PORT = 12001; // Đây là port Client lắng nghe
                 var clientAddress = IPAddress.Parse(clientIp);
                 var clientEndPoint = new IPEndPoint(clientAddress, CLIENT_PORT);
 
+                // Gửi Video đến client
                 _screenSender.AddClient(clientEndPoint);
+
+                // Gửi Audio đến CÙNG client endpoint đó
+                _audioManager.SetTargetEndPoint(clientEndPoint);
 
                 App.Current.Dispatcher.Invoke(() =>
                 {
@@ -176,6 +206,15 @@ namespace WPFUI_NEW.ViewModels
                     // SỬA LỖI: Dùng 'bitmap' thay vì '_bitmap' không tồn tại
                     bitmap?.UnlockBits(bitmapData);
                 }
+            }
+        }
+
+        public void Cleanup()
+        {
+            // Nếu đang stream, gọi Toggle để dừng và dọn dẹp
+            if (_screenSender != null)
+            {
+                ToggleStreamingAsync().Wait(); // Chờ 
             }
         }
     }

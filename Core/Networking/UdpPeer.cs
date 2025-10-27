@@ -4,6 +4,7 @@ using RealTimeUdpStream.Core.Util;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -49,6 +50,8 @@ namespace Core.Networking
         /// </summary>
         public async Task SendToAsync(UdpPacket packet, IPEndPoint remoteEndPoint)
         {
+
+            Debug.WriteLine($"[UdpPeer.SendToAsync] Sending PacketType: {(UdpPacketType)packet.Header.PacketType} | Seq: {packet.Header.SequenceNumber}");
             var payload = packet.Payload;
             int packetSize = PacketBuilder.HeaderSize + payload.Count;
             var buffer = BytePool.Rent(packetSize);
@@ -102,6 +105,7 @@ namespace Core.Networking
                 return; // Bỏ qua gói tin hỏng hoặc không hợp lệ
             }
 
+            Debug.WriteLine($"[UdpPeer.ProcessReceivedPacket] Received PacketType: {(UdpPacketType)header.PacketType} | Seq: {header.SequenceNumber}");
             _networkStats.LogPacketReceived(buffer.Length);
 
             // Tối ưu: Tạo một packet "view" trỏ thẳng vào buffer nhận được, không copy dữ liệu.
@@ -111,10 +115,15 @@ namespace Core.Networking
             switch ((UdpPacketType)header.PacketType)
             {
                 case UdpPacketType.Video:
-                case UdpPacketType.Audio:
-                    Console.WriteLine($"[UdpPeer] Processing {(UdpPacketType)header.PacketType} packet");
-                    AddToFecGroup(packet); // Luôn thêm packet vào nhóm FEC để có thể dùng để phục hồi gói khác
+                    // Video đi qua logic ghép mảnh (FEC/Reassembly)
+                    Console.WriteLine($"[UdpPeer] Processing Video packet");
+                    AddToFecGroup(packet);
                     HandleDataPacket(packet);
+                    break;
+                case UdpPacketType.Audio:
+                    // SỬA LỖI: Audio là gói tin độc lập, gửi thẳng lên
+                    Console.WriteLine($"[UdpPeer] Processing Audio packet");
+                    OnPacketReceived?.Invoke(packet); // Không qua HandleDataPacket
                     break;
                 case UdpPacketType.Fec:
                     HandleFecPacket(packet);

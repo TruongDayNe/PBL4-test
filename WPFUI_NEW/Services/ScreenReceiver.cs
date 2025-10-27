@@ -19,9 +19,9 @@ namespace WPFUI_NEW.Services
 
         public event FrameReadyHandler OnFrameReady;
 
-        public ScreenReceiver(int listenPort)
+        public ScreenReceiver(UdpPeer peer)
         {
-            _peer = new UdpPeer(listenPort);
+            _peer = peer; // peer được chia sẻ
             // Đăng ký vào sự kiện của UdpPeer, nơi sẽ trả về các frame đã hoàn chỉnh
             _peer.OnPacketReceived += Peer_OnPacketReceived;
         }
@@ -90,8 +90,10 @@ namespace WPFUI_NEW.Services
 
         public void Dispose()
         {
-            Stop();
-            _peer?.Dispose();
+            if (_peer != null)
+            {
+                _peer.OnPacketReceived -= Peer_OnPacketReceived; // Hủy đăng ký sự kiện
+            }
         }
     }
 }

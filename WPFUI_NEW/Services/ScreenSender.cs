@@ -12,7 +12,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using RealtimeUdpStream.Core.Networking; // Thêm
+using RealtimeUdpStream.Core.Networking;
 using System.Collections.Concurrent;
 
 namespace WPFUI_NEW.Services
@@ -26,7 +26,7 @@ namespace WPFUI_NEW.Services
         public const int FRAMERATE_MS = 33; // ~30 FPS
         private const int FEC_GROUP_SIZE = 10;
 
-        private readonly UdpPeer _server;
+        private readonly UdpPeer _peer;
         private readonly ConcurrentBag<IPEndPoint> _clients = new ConcurrentBag<IPEndPoint>(); // Danh sách client
         private readonly ScreenProcessor _screenProcessor;
         private static readonly ImageCodecInfo JpegCodec = GetEncoder(ImageFormat.Jpeg);
@@ -34,9 +34,9 @@ namespace WPFUI_NEW.Services
 
         public int ClientCount => _clients.Count;
 
-        public ScreenSender(int serverPort, ScreenProcessor processor)
+        public ScreenSender(UdpPeer peer, ScreenProcessor processor)
         {
-            _server = new UdpPeer(serverPort);
+            _peer = peer; // peer được chia sẻ
             _screenProcessor = processor;
 
             _encoderParams = new EncoderParameters(1);
@@ -56,7 +56,7 @@ namespace WPFUI_NEW.Services
             var sendTasks = new List<Task>(_clients.Count);
             foreach (var client in _clients)
             {
-                sendTasks.Add(_server.SendToAsync(packet, client));
+                sendTasks.Add(_peer.SendToAsync(packet, client));
             }
             await Task.WhenAll(sendTasks);
         }
@@ -93,7 +93,7 @@ namespace WPFUI_NEW.Services
 
                     OnFrameCaptured?.Invoke(imageForPreview);
 
-                    int maxPayloadSize = _server.MaximumTransferUnit - PacketBuilder.HeaderSize;
+                    int maxPayloadSize = _peer.MaximumTransferUnit - PacketBuilder.HeaderSize;
                     int totalChunks = (int)Math.Ceiling((double)largeData.Length / maxPayloadSize);
                     sequenceNumber++;
 
@@ -105,7 +105,6 @@ namespace WPFUI_NEW.Services
                         int chunkSize = Math.Min(maxPayloadSize, largeData.Length - chunkOffset);
 
                         var chunkPayloadBuffer = BytePool.Rent(chunkSize);
-                        // SỬA LỖI: Dùng lại Buffer.BlockCopy
                         Buffer.BlockCopy(largeData, chunkOffset, chunkPayloadBuffer, 0, chunkSize);
                         var payloadSegment = new ArraySegment<byte>(chunkPayloadBuffer, 0, chunkSize);
 
@@ -113,7 +112,6 @@ namespace WPFUI_NEW.Services
                         {
                             Version = 1,
                             PacketType = (byte)UdpPacketType.Video,
-                            // SỬA LỖI: Bỏ dòng _sessionNumber
                             SequenceNumber = sequenceNumber,
                             TotalChunks = (ushort)totalChunks,
                             ChunkId = i
@@ -141,7 +139,6 @@ namespace WPFUI_NEW.Services
 
                             foreach (var p in dataPacketsInGroup) p.Dispose();
                             dataPacketsInGroup.Clear();
-                            // SỬA LỖI: Bỏ dòng _dataPacketsInGroup.ForEach
                         }
                         dataPacketsInGroup.Clear();
                     }
@@ -168,7 +165,8 @@ namespace WPFUI_NEW.Services
 
         public void Dispose()
         {
-            _server?.Dispose();
+            // ViewMode dispose resources if needed
+            //_server?.Dispose();
         }
     }
 }

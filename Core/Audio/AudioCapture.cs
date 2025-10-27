@@ -92,6 +92,8 @@ namespace RealTimeUdpStream.Core.Audio
         {
             if (e.BytesRecorded == 0) return;
 
+            Debug.WriteLine($"[AudioCapture] OnDataAvailable: {e.BytesRecorded} bytes");
+
             try
             {
                 // Tạo AudioPacket từ dữ liệu nhận được

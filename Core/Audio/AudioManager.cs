@@ -134,6 +134,8 @@ namespace RealTimeUdpStream.Core.Audio
 
         private void SendAudioPacket(AudioPacket audioPacket)
         {
+            Debug.WriteLine($"[AudioManager] SendAudioPacket called. Target: {_targetEndPoint?.ToString() ?? "NULL"}");
+
             if (!_isStreaming || _disposed || _targetEndPoint == null) return;
 
             try
