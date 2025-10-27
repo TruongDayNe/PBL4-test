@@ -1,4 +1,4 @@
-﻿﻿using RealTimeUdpStream.Core.Models;
+﻿using RealTimeUdpStream.Core.Models;
 using RealTimeUdpStream.Core.Networking;
 using RealTimeUdpStream.Core.Util;
 using System;
@@ -26,6 +26,7 @@ namespace Core.Networking
 
         // Stats and Events
         private readonly NetworkStats _networkStats = new NetworkStats();
+        public NetworkStats Stats => _networkStats;
         public Action<UdpPacket> OnPacketReceived;
         public int MaximumTransferUnit { get; } = 1400; // Typical MTU for Ethernet
 
@@ -37,7 +38,7 @@ namespace Core.Networking
         public UdpPeer(int localPort)
         {
             _udpClient = new UdpClient(localPort);
-            
+
             // Increase buffer sizes for better audio quality
             _udpClient.Client.ReceiveBufferSize = 1024 * 1024; // 1MB receive buffer
             _udpClient.Client.SendBufferSize = 1024 * 1024;    // 1MB send buffer
@@ -61,7 +62,8 @@ namespace Core.Networking
                 _packetBuilder.WriteChecksum(buffer.AsSpan(0, packetSize));
 
                 await _udpClient.SendAsync(buffer, packetSize, remoteEndPoint);
-                //_networkStats.LogPacketSent(packet.Header.SequenceNumber);
+                _networkStats.LogPacketSent(packet.Header.SequenceNumber, packetSize);
+
             }
             finally
             {
@@ -100,9 +102,7 @@ namespace Core.Networking
                 return; // Bỏ qua gói tin hỏng hoặc không hợp lệ
             }
 
-            //_networkStats.LogPacketReceived();
-            
-            Console.WriteLine($"[UdpPeer] Received packet type: 0x{header.PacketType:X2} from {source}");
+            _networkStats.LogPacketReceived(buffer.Length);
 
             // Tối ưu: Tạo một packet "view" trỏ thẳng vào buffer nhận được, không copy dữ liệu.
             var payloadSegment = new ArraySegment<byte>(buffer, PacketParser.HeaderSize, buffer.Length - PacketParser.HeaderSize);
