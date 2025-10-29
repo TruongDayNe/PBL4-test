@@ -142,6 +142,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Audio\AudioCapture.cs" />
+    <Compile Include="Audio\AudioConverter.cs" />
     <Compile Include="Audio\AudioManager.cs" />
     <Compile Include="Audio\AudioPlayback.cs" />
     <Compile Include="Models\AudioPacket.cs" />

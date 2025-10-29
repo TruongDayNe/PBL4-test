@@ -6,27 +6,39 @@ using System.Diagnostics;
 namespace RealTimeUdpStream.Core.Audio
 {
     /// <summary>
-    /// Capture âm thanh từ microphone hoặc system audio
+    /// Capture âm thanh từ microphone hoặc system audio với format conversion
     /// </summary>
     public class AudioCapture : IDisposable
     {
         private readonly AudioConfig _config;
         private IWaveIn _waveIn;
         private WaveFormat _waveFormat;
+        private WaveFormat _captureFormat; // Format thực tế của capture device
+        private AudioConverter _audioConverter;
+        private AudioInputType _inputType;
         private bool _isCapturing = false;
         private bool _disposed = false;
+
+        // Standard format cho tất cả audio: 48kHz, 16-bit, stereo
+        private static readonly WaveFormat StandardFormat = new WaveFormat(48000, 16, 2);
 
         public event Action<AudioPacket> OnAudioDataAvailable;
 
         public AudioCapture(AudioConfig config, AudioInputType inputType = AudioInputType.Microphone)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
+            _inputType = inputType;
+            
+            // Initialize converter to standard format
+            _audioConverter = new AudioConverter(StandardFormat);
+            
             InitializeAudioInput(inputType);
         }
 
         private void InitializeAudioInput(AudioInputType inputType)
         {
-            _waveFormat = new WaveFormat(_config.SampleRate, _config.BitsPerSample, _config.Channels);
+            // Use standard format for microphone
+            _waveFormat = StandardFormat;
 
             switch (inputType)
             {
@@ -36,13 +48,24 @@ namespace RealTimeUdpStream.Core.Audio
                         WaveFormat = _waveFormat,
                         BufferMilliseconds = (int)_config.BufferDurationMs
                     };
+                    _captureFormat = _waveFormat; // Microphone already uses standard format
+                    Debug.WriteLine($"Microphone format: {_waveFormat} (STANDARD)");
                     break;
 
                 case AudioInputType.SystemAudio:
-                    _waveIn = new WasapiLoopbackCapture
+                    // System audio uses loopback which may have different format
+                    var loopback = new WasapiLoopbackCapture();
+                    _waveIn = loopback;
+                    _captureFormat = loopback.WaveFormat; // May be 32-bit float
+                    
+                    Debug.WriteLine($"System audio capture initialized");
+                    Debug.WriteLine($"Capture format: {_captureFormat}");
+                    Debug.WriteLine($"Will convert to: {StandardFormat}");
+                    
+                    if (_captureFormat.Encoding == WaveFormatEncoding.IeeeFloat && _captureFormat.BitsPerSample == 32)
                     {
-                        WaveFormat = _waveFormat
-                    };
+                        Debug.WriteLine("⚠️  32-bit float detected - will convert to 16-bit PCM to fix quality issues");
+                    }
                     break;
 
                 default:
@@ -96,19 +119,25 @@ namespace RealTimeUdpStream.Core.Audio
 
             try
             {
-                // Tạo AudioPacket từ dữ liệu nhận được
-                var audioData = new byte[e.BytesRecorded];
+                byte[] audioData = new byte[e.BytesRecorded];
                 Buffer.BlockCopy(e.Buffer, 0, audioData, 0, e.BytesRecorded);
+
+                // Convert system audio to standard format if needed
+                if (_inputType == AudioInputType.SystemAudio && !FormatsMatch(_captureFormat, StandardFormat))
+                {
+                    audioData = _audioConverter.ConvertAudio(_captureFormat, audioData, e.BytesRecorded);
+                    Debug.WriteLine($"Converted: {_captureFormat} → {StandardFormat}");
+                }
 
                 var header = new AudioPacketHeader
                 {
                     SequenceNumber = GenerateSequenceNumber(),
                     TimestampMs = (ulong)(DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond),
                     Codec = _config.Codec,
-                    SampleRate = _config.SampleRate,
-                    Channels = _config.Channels,
-                    SamplesPerChannel = e.BytesRecorded / (_config.Channels * (_config.BitsPerSample / 8)),
-                    DataLength = (ushort)e.BytesRecorded
+                    SampleRate = StandardFormat.SampleRate, // Always use standard format
+                    Channels = StandardFormat.Channels,
+                    SamplesPerChannel = audioData.Length / (StandardFormat.Channels * (StandardFormat.BitsPerSample / 8)),
+                    DataLength = (ushort)audioData.Length
                 };
 
                 var packet = new AudioPacket(header, new ArraySegment<byte>(audioData));
@@ -118,6 +147,14 @@ namespace RealTimeUdpStream.Core.Audio
             {
                 Debug.WriteLine($"Error processing audio data: {ex.Message}");
             }
+        }
+
+        private bool FormatsMatch(WaveFormat format1, WaveFormat format2)
+        {
+            return format1.SampleRate == format2.SampleRate &&
+                   format1.Channels == format2.Channels &&
+                   format1.BitsPerSample == format2.BitsPerSample &&
+                   format1.Encoding == format2.Encoding;
         }
 
         private void OnRecordingStopped(object sender, StoppedEventArgs e)
@@ -140,6 +177,7 @@ namespace RealTimeUdpStream.Core.Audio
 
             StopCapture();
             _waveIn?.Dispose();
+            _audioConverter?.Dispose();
             _disposed = true;
 
             Debug.WriteLine("AudioCapture disposed");

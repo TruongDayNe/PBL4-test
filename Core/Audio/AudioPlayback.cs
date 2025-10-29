@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace RealTimeUdpStream.Core.Audio
 {
     /// <summary>
-    /// Phát âm thanh từ các AudioPacket nhận được
+    /// Phát âm thanh từ các AudioPacket nhận được với độ trễ 5 giây
     /// </summary>
     public class AudioPlayback : IDisposable
     {
@@ -17,7 +17,9 @@ namespace RealTimeUdpStream.Core.Audio
         private IWavePlayer _waveOut;
         private BufferedWaveProvider _waveProvider;
         private readonly ConcurrentQueue<AudioPacket> _audioQueue;
+        private readonly ConcurrentQueue<DelayedAudioData> _delayQueue; // Queue cho delay
         private readonly Timer _bufferTimer;
+        private readonly Timer _delayTimer; // Timer xử lý delay
         private readonly object _playbackLock = new object();
         private bool _disposed = false;
         private bool _isPlaying = false;
@@ -25,16 +27,30 @@ namespace RealTimeUdpStream.Core.Audio
         // Buffer management
         private const int MAX_BUFFER_DURATION_MS = 1000; // 1 second maximum buffer
         private const int MIN_BUFFER_DURATION_MS = 100;  // 100ms minimum before starting playback
+        private const int DELAY_DURATION_MS = 5000; // 5 giây độ trễ
+
+        // Delay data structure
+        private class DelayedAudioData
+        {
+            public byte[] Data { get; set; }
+            public long PlayAtTicks { get; set; }
+        }
 
         public AudioPlayback(AudioConfig config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _audioQueue = new ConcurrentQueue<AudioPacket>();
+            _delayQueue = new ConcurrentQueue<DelayedAudioData>();
 
             InitializePlayback();
 
             // Timer để kiểm tra và quản lý buffer
             _bufferTimer = new Timer(ProcessAudioBuffer, null, 10, 10); // Check every 10ms
+            
+            // Timer để xử lý delay buffer
+            _delayTimer = new Timer(ProcessDelayBuffer, null, 50, 50); // Check every 50ms
+            
+            Debug.WriteLine($"AudioPlayback initialized with {DELAY_DURATION_MS}ms delay");
         }
 
         private void InitializePlayback()
@@ -113,13 +129,63 @@ namespace RealTimeUdpStream.Core.Audio
                     var audioData = packet.AudioData;
                     if (audioData.Count > 0)
                     {
-                        _waveProvider.AddSamples(audioData.Array, audioData.Offset, audioData.Count);
+                        // Thêm vào delay queue thay vì phát ngay
+                        byte[] delayedData = new byte[audioData.Count];
+                        Buffer.BlockCopy(audioData.Array, audioData.Offset, delayedData, 0, audioData.Count);
+                        
+                        var delayedItem = new DelayedAudioData
+                        {
+                            Data = delayedData,
+                            PlayAtTicks = DateTime.UtcNow.Ticks + (DELAY_DURATION_MS * TimeSpan.TicksPerMillisecond)
+                        };
+                        
+                        _delayQueue.Enqueue(delayedItem);
                     }
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Error adding audio to buffer: {ex.Message}");
+                    Debug.WriteLine($"Error adding audio to delay buffer: {ex.Message}");
                 }
+            }
+        }
+
+        private void ProcessDelayBuffer(object state)
+        {
+            if (_disposed) return;
+
+            try
+            {
+                long currentTicks = DateTime.UtcNow.Ticks;
+                int processedCount = 0;
+
+                // Xử lý tất cả audio data đã đến thời gian phát
+                while (_delayQueue.TryPeek(out DelayedAudioData delayedItem))
+                {
+                    if (delayedItem.PlayAtTicks <= currentTicks)
+                    {
+                        if (_delayQueue.TryDequeue(out delayedItem))
+                        {
+                            lock (_playbackLock)
+                            {
+                                _waveProvider.AddSamples(delayedItem.Data, 0, delayedItem.Data.Length);
+                                processedCount++;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        break; // Chưa đến thời gian phát
+                    }
+                }
+
+                if (processedCount > 0)
+                {
+                    Debug.WriteLine($"Processed {processedCount} delayed audio chunks. Delay queue: {_delayQueue.Count}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error processing delay buffer: {ex.Message}");
             }
         }
 
@@ -192,10 +258,15 @@ namespace RealTimeUdpStream.Core.Audio
                 {
                     packet?.Dispose();
                 }
+                while (_delayQueue.TryDequeue(out DelayedAudioData delayedData))
+                {
+                    // Clear delay queue
+                }
             }
         }
 
         public double BufferedDurationMs => _waveProvider?.BufferedDuration.TotalMilliseconds ?? 0;
+        public int DelayQueueCount => _delayQueue?.Count ?? 0;
         public bool IsPlaying => _isPlaying;
 
         public void Dispose()
@@ -203,6 +274,7 @@ namespace RealTimeUdpStream.Core.Audio
             if (_disposed) return;
 
             _bufferTimer?.Dispose();
+            _delayTimer?.Dispose();
             StopPlayback();
             ClearBuffer();
 
