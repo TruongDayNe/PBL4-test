@@ -1,12 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.Networking;
-using Core.Networking;
 using RealTimeUdpStream.Core.Audio;
 using RealTimeUdpStream.Core.Models;
 using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -27,7 +27,7 @@ namespace WPFUI_NEW.ViewModels
         private UdpPeer _sharedUdpPeer; // Peer chia sẻ
         private AudioManager _audioManager; // Quản lý audio
 
-        [ObservableProperty] private BitmapSource _previewImage;
+        [ObservableProperty] private BitmapSource previewImage = null!; // Initialize non-nullable fields
         [ObservableProperty] private string _streamButtonContent = "Bắt đầu Host";
         [ObservableProperty] private string _statusText = "Sẵn sàng";
 
@@ -38,14 +38,21 @@ namespace WPFUI_NEW.ViewModels
             _networkService = new NetworkService();
             _networkService.ClientConnected += OnClientConnected;
             StartStreamCommand = new AsyncRelayCommand(ToggleStreamingAsync);
+
+            // Initialize non-nullable fields
+            _screenProcessor = null!; // Mark as nullable or initialize properly
+            _screenSender = null!; // Mark as nullable or initialize properly
+            _cancellationTokenSource = null!; // Mark as nullable or initialize properly
+            _sharedUdpPeer = null!; // Mark as nullable or initialize properly
+            _audioManager = null!; // Mark as nullable or initialize properly
         }
 
         private async Task ToggleStreamingAsync()
         {
             if (_screenSender != null)
             {
-                // --- LOGIC DỪNG STREAM ---
-                _cancellationTokenSource?.Cancel();
+                // --- LOGIC DỪNG STREAM ---
+                _cancellationTokenSource?.Cancel();
                 _networkService.StopListening();
                 Debug.WriteLine("[Host] Đã yêu cầu dừng stream/chờ...");
 
@@ -75,8 +82,8 @@ namespace WPFUI_NEW.ViewModels
             }
             else
             {
-                // --- LOGIC BẮT ĐẦU HOST ---
-                try
+                // --- LOGIC BẮT ĐẦU HOST ---
+                try
                 {
                     _cancellationTokenSource = new CancellationTokenSource();
                     const int SERVER_PORT = 12000;
@@ -92,18 +99,19 @@ namespace WPFUI_NEW.ViewModels
                     _screenSender.OnFrameCaptured += HandleFrameCaptured;
                     Debug.WriteLine("[Host] ScreenSender created.");
 
-                    // Dùng UdpPeer chia sẻ cho AudioManager
-                    _audioManager = new AudioManager(_sharedUdpPeer, AudioConfig.CreateDefault());
+                    // HOST mode: không delay, phát ngay
+                    _audioManager = new AudioManager(_sharedUdpPeer, AudioConfig.CreateDefault(), isClientMode: false);
 
                     _audioManager.StartAudioStreaming(AudioInputType.SystemAudio); // Bắt đầu ghi âm system
                     //_audioManager.StartAudioStreaming(AudioInputType.Microphone); // Bắt đầu ghi âm mic
 
                     Debug.WriteLine("[Host] AudioManager created and started.");
 
-                    Task.Run(() => _screenSender.SendScreenLoopAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
+                    // Bỏ await để không block UI thread
+                    _ = Task.Run(() => _screenSender.SendScreenLoopAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
                     Debug.WriteLine("[Host] SendScreenLoopAsync started.");
 
-                    Task.Run(() => _networkService.StartTcpListenerLoopAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token)
+                    _ = Task.Run(() => _networkService.StartTcpListenerLoopAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token)
                     .ContinueWith(t =>
                     {
                         if (t.IsFaulted && _cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
@@ -135,6 +143,9 @@ namespace WPFUI_NEW.ViewModels
 
         private void OnClientConnected(string clientIp)
         {
+            string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "audio_debug.log");
+            File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] 🔗 OnClientConnected: ClientIP={clientIp}, _audioManager={(_audioManager == null ? "NULL" : "SET")}{Environment.NewLine}");
+            
             if (_screenSender == null || _cancellationTokenSource == null || _cancellationTokenSource.IsCancellationRequested)
             {
                 Debug.WriteLine($"[Host] Client {clientIp} đã kết nối, nhưng Host không stream. Bỏ qua.");
@@ -147,11 +158,15 @@ namespace WPFUI_NEW.ViewModels
                 var clientAddress = IPAddress.Parse(clientIp);
                 var clientEndPoint = new IPEndPoint(clientAddress, CLIENT_PORT);
 
+                File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] Setting target endpoint: {clientEndPoint}{Environment.NewLine}");
+
                 // Gửi Video đến client
                 _screenSender.AddClient(clientEndPoint);
 
                 // Gửi Audio đến CÙNG client endpoint đó
                 _audioManager.SetTargetEndPoint(clientEndPoint);
+                
+                File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] ✅ Target endpoint SET for audio!{Environment.NewLine}");
 
                 App.Current.Dispatcher.Invoke(() =>
                 {

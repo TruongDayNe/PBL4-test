@@ -141,7 +141,7 @@ namespace RealTimeUdpStream.Core.Models
         {
             return new AudioConfig
             {
-                SampleRate = 44100,
+                SampleRate = 48000, // Khớp với AudioCapture StandardFormat
                 Channels = 2,
                 BitsPerSample = 16,
                 Codec = AudioCodec.PCM16,

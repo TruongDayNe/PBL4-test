@@ -9,6 +9,14 @@ namespace WPFUI_NEW
     /// </summary>
     public partial class App : Application
     {
+        public App()
+        {
+            // Show console window for debugging
+            AllocConsole();
+        }
+        
+        [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+        private static extern bool AllocConsole();
     }
 
 }

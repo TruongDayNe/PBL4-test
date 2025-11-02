@@ -32,7 +32,7 @@ namespace WPFUI_NEW.ViewModels
         [ObservableProperty] private BitmapSource _receivedImage;
         [ObservableProperty] private string _connectButtonContent = "Kết nối";
         [ObservableProperty] private string _hostIpAddress = "127.0.0.1"; // IP Host cần nhập
-        [ObservableProperty] private int _clientPort = 12001; // Port Client lắng nghe UDP
+        [ObservableProperty] private int clientPort = 12001; // Replace _clientPort with generated property
 
         public IAsyncRelayCommand ConnectCommand { get; }
 
@@ -41,7 +41,13 @@ namespace WPFUI_NEW.ViewModels
             _networkService = new NetworkService();
             ConnectCommand = new AsyncRelayCommand(ToggleConnectionAsync);
 
-            // Khởi tạo timer telemetry
+            // Initialize non-nullable fields
+            _screenReceiver = null!; // Mark as nullable or initialize properly
+            _sharedUdpPeer = null!; // Mark as nullable or initialize properly
+            _audioManager = null!; // Mark as nullable or initialize properly
+            _receivedImage = null!; // Mark as nullable or initialize properly
+
+            // Initialize telemetry timer
             _telemetryTimer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromSeconds(1)
@@ -53,71 +59,41 @@ namespace WPFUI_NEW.ViewModels
         {
             if (_screenReceiver != null)
             {
-                // --- LOGIC NGẮT KẾT NỐI ---
-                Debug.WriteLine("[Client] Đang ngắt kết nối UDP...");
-                _telemetryTimer.Stop(); // Dừng timer trước
-
-                // Dọn dẹp AudioManager VÀ ScreenReceiver
+                // Disconnect logic
+                _telemetryTimer.Stop();
                 _audioManager?.StopAudioReceiving();
                 _audioManager?.Dispose();
                 _audioManager = null;
-
-                _screenReceiver?.Stop(); // Stop cho chắc
-                _screenReceiver?.Dispose(); // Dispose sẽ hủy đăng ký sự kiện
+                _screenReceiver?.Stop();
+                _screenReceiver?.Dispose();
                 _screenReceiver = null;
-
-                // Dọn dẹp UdpPeer (SAU CÙNG)
                 _sharedUdpPeer?.Dispose();
                 _sharedUdpPeer = null;
                 ConnectButtonContent = "Kết nối";
-
-                ReceivedImage = null; // Xóa ảnh
-                // Reset telemetry text
+                ReceivedImage = null;
                 PingText = "---";
                 BitrateText = "---";
                 LossText = "---";
             }
             else
             {
-                // --- LOGIC KẾT NỐI MỚI ---
-                Debug.WriteLine($"[Client] Bắt đầu quy trình kết nối tới Host: {HostIpAddress}");
+                // Connect logic
                 ConnectButtonContent = "Đang kết nối...";
-
-                // 1. Kết nối TCP để gửi IP
                 bool tcpSuccess = await _networkService.ConnectToHostAsync(HostIpAddress);
-
                 if (tcpSuccess)
                 {
-                    Debug.WriteLine($"[Client] Gửi IP thành công. Bắt đầu lắng nghe UDP trên port {_clientPort}...");
-                    // 2. Nếu TCP thành công, bắt đầu ScreenReceiver (UDP)
-                    try
-                    {
-                        // Tạo UdpPeer chung
-                        _sharedUdpPeer = new UdpPeer(_clientPort); // _clientPort = 12001
-
-                        // Dùng UdpPeer cho ScreenReceiver
-                        _screenReceiver = new ScreenReceiver(_sharedUdpPeer);
-                        _screenReceiver.OnFrameReady += HandleFrameReady;
-
-                        _audioManager = new AudioManager(_sharedUdpPeer, AudioConfig.CreateDefault());
-                        // AudioManager sẽ tự đăng ký OnPacketReceived với _sharedUdpPeer
-
-                        _audioManager.StartAudioReceiving();
-
-                        //_screenReceiver.Start(); 
-                        //Không gọi _screenReceiver.Start() nữa vì AudioManager đã khởi động _sharedUdpPeer
-                        ConnectButtonContent = "Ngắt kết nối";
-                        _telemetryTimer.Start(); // Bắt đầu timer telemetry
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Lỗi khi bắt đầu nhận UDP (Port {_clientPort} có thể đang được sử dụng?): {ex.Message}", "Lỗi UDP", MessageBoxButton.OK, MessageBoxImage.Error);
-                        ConnectButtonContent = "Kết nối";
-                    }
+                    _sharedUdpPeer = new UdpPeer(ClientPort); // Use generated property
+                    _screenReceiver = new ScreenReceiver(_sharedUdpPeer);
+                    _screenReceiver.OnFrameReady += HandleFrameReady;
+                    // TẮT DELAY TẠM THỜI ĐỂ TEST
+                    _audioManager = new AudioManager(_sharedUdpPeer, AudioConfig.CreateDefault(), isClientMode: false);
+                    _audioManager.StartAudioReceiving();
+                    ConnectButtonContent = "Ngắt kết nối";
+                    _telemetryTimer.Start();
                 }
                 else
                 {
-                    MessageBox.Show($"Không thể kết nối TCP đến Host tại {HostIpAddress}:{NetworkService.HandshakePort}. Hãy đảm bảo Host đang chạy và kiểm tra tường lửa.", "Lỗi Kết Nối TCP", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Không thể kết nối TCP đến Host tại {HostIpAddress}:{NetworkService.HandshakePort}.", "Lỗi Kết Nối TCP", MessageBoxButton.OK, MessageBoxImage.Error);
                     ConnectButtonContent = "Kết nối";
                 }
             }

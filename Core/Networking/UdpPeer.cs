@@ -122,8 +122,10 @@ namespace Core.Networking
                     break;
                 case UdpPacketType.Audio:
                     // SỬA LỖI: Audio là gói tin độc lập, gửi thẳng lên
-                    Console.WriteLine($"[UdpPeer] Processing Audio packet");
+                    Console.WriteLine($"[UdpPeer] Processing Audio packet Seq={packet.Header.SequenceNumber}, Size={packet.Payload.Count}");
+                    Debug.WriteLine($"[UdpPeer] >>> AUDIO PACKET RECEIVED: Seq={packet.Header.SequenceNumber}, Subscribers={OnPacketReceived?.GetInvocationList().Length ?? 0}");
                     OnPacketReceived?.Invoke(packet); // Không qua HandleDataPacket
+                    Debug.WriteLine($"[UdpPeer] >>> Audio packet dispatched to subscribers");
                     break;
                 case UdpPacketType.Fec:
                     HandleFecPacket(packet);
