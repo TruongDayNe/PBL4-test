@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using Core.Networking;
 using RealTimeUdpStream.Core.Audio;
+using RealTimeUdpStream.Core.Input;
 using RealTimeUdpStream.Core.Models; // Thêm using cho TelemetrySnapshot
 using RealTimeUdpStream.Core.Networking; // Thêm using cho NetworkStats
 using System;
@@ -22,6 +23,7 @@ namespace WPFUI_NEW.ViewModels
 
         private UdpPeer _sharedUdpPeer; // Peer chia sẻ
         private AudioManager _audioManager;
+        private KeyboardManager _keyboardManager; // Quản lý keyboard
 
         // --- Thuộc tính cho Telemetry ---
         [ObservableProperty] private string _pingText = "---";
@@ -45,6 +47,7 @@ namespace WPFUI_NEW.ViewModels
             _screenReceiver = null!; // Mark as nullable or initialize properly
             _sharedUdpPeer = null!; // Mark as nullable or initialize properly
             _audioManager = null!; // Mark as nullable or initialize properly
+            _keyboardManager = null!; // Mark as nullable or initialize properly
             _receivedImage = null!; // Mark as nullable or initialize properly
 
             // Initialize telemetry timer
@@ -64,6 +67,9 @@ namespace WPFUI_NEW.ViewModels
                 _audioManager?.StopAudioReceiving();
                 _audioManager?.Dispose();
                 _audioManager = null;
+                _keyboardManager?.StopCapture();
+                _keyboardManager?.Dispose();
+                _keyboardManager = null;
                 _screenReceiver?.Stop();
                 _screenReceiver?.Dispose();
                 _screenReceiver = null;
@@ -85,9 +91,20 @@ namespace WPFUI_NEW.ViewModels
                     _sharedUdpPeer = new UdpPeer(ClientPort); // Use generated property
                     _screenReceiver = new ScreenReceiver(_sharedUdpPeer);
                     _screenReceiver.OnFrameReady += HandleFrameReady;
+                    
                     // TẮT DELAY TẠM THỜI ĐỂ TEST
                     _audioManager = new AudioManager(_sharedUdpPeer, AudioConfig.CreateDefault(), isClientMode: false);
                     _audioManager.StartAudioReceiving();
+                    
+                    // CLIENT mode = FALSE = CAPTURE (gửi phím cho HOST)
+                    // Lấy HOST endpoint để gửi phím
+                    var hostEndPoint = new System.Net.IPEndPoint(System.Net.IPAddress.Parse(HostIpAddress), 12000);
+                    _keyboardManager = new KeyboardManager(_sharedUdpPeer, isClientMode: false);
+                    _keyboardManager.SetTargetEndPoint(hostEndPoint);
+                    _keyboardManager.StartCapture(); // CLIENT CAPTURE phím và GỬI cho HOST
+                    Console.WriteLine("[CLIENT] Bat che do CAPTURE - se gui phim WASD cho HOST");
+                    Debug.WriteLine("[Client] KeyboardManager CAPTURE started - se gui phim WASD cho HOST.");
+                    
                     ConnectButtonContent = "Ngắt kết nối";
                     _telemetryTimer.Start();
                 }

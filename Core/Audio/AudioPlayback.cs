@@ -75,14 +75,6 @@ namespace RealTimeUdpStream.Core.Audio
         private void InitializePlayback()
         {
             var waveFormat = new WaveFormat(_config.SampleRate, _config.BitsPerSample, _config.Channels);
-            
-            Console.WriteLine($"========== AUDIO PLAYBACK INITIALIZED ==========");
-            Console.WriteLine($"Playback format: {waveFormat}");
-            Console.WriteLine($"  - SampleRate: {waveFormat.SampleRate} Hz");
-            Console.WriteLine($"  - Channels: {waveFormat.Channels}");
-            Console.WriteLine($"  - BitsPerSample: {waveFormat.BitsPerSample}");
-            Console.WriteLine($"  - Encoding: {waveFormat.Encoding}");
-            Console.WriteLine($"================================================");
 
             _waveProvider = new BufferedWaveProvider(waveFormat)
             {
@@ -137,15 +129,6 @@ namespace RealTimeUdpStream.Core.Audio
                             LogToFile($"!!! Packet FAILED validation: Expected {_config.SampleRate}Hz/{_config.Channels}ch, Got {packet.Header.SampleRate}Hz/{packet.Header.Channels}ch");
                         }
                     }
-                }
-
-                // Log buffer status for debugging choppy audio
-                if (queueCountBefore > 0 || processedCount > 0)
-                {
-                    var bufferedMs = _waveProvider.BufferedDuration.TotalMilliseconds;
-                    var bufferedBytes = _waveProvider.BufferedBytes;
-                    Console.WriteLine($"[Buffer] Queue={queueCountBefore}, Processed={processedCount}, BufferedMs={bufferedMs:F0}ms, BufferedBytes={bufferedBytes}");
-                    LogToFile($"ProcessAudioBuffer: QueueBefore={queueCountBefore}, Processed={processedCount}, BufferedMs={bufferedMs:F0}ms, Bytes={bufferedBytes}");
                 }
 
                 // Qu?n l� playback state
@@ -269,24 +252,16 @@ namespace RealTimeUdpStream.Core.Audio
                 var bufferedDurationMs = _waveProvider.BufferedDuration.TotalMilliseconds;
                 var bufferedBytes = _waveProvider.BufferedBytes;
 
-                // Log buffer status to diagnose choppy audio
-                if (bufferedDurationMs < 50 && _isPlaying)
-                {
-                    Console.WriteLine($"⚠️ WARNING: Low buffer! Only {bufferedDurationMs:F0}ms ({bufferedBytes} bytes) - May cause stuttering!");
-                }
-
                 LogToFile($"ManagePlaybackState: BufferedMs={bufferedDurationMs:F0}, Bytes={bufferedBytes}, IsPlaying={_isPlaying}, MinRequired={MIN_BUFFER_DURATION_MS}");
 
                 if (!_isPlaying && bufferedDurationMs >= MIN_BUFFER_DURATION_MS)
                 {
                     // B?t d?u ph�t khi c� d? buffer
-                    Console.WriteLine($"✓ Starting playback with {bufferedDurationMs:F0}ms buffer");
                     StartPlayback();
                 }
                 else if (_isPlaying && bufferedDurationMs <= 0)
                 {
                     // D?ng ph�t khi h?t buffer
-                    Console.WriteLine($"⚠️ BUFFER UNDERRUN! Stopping playback");
                     StopPlayback();
                 }
             }

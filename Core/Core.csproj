@@ -145,6 +145,9 @@
     <Compile Include="Audio\AudioConverter.cs" />
     <Compile Include="Audio\AudioManager.cs" />
     <Compile Include="Audio\AudioPlayback.cs" />
+    <Compile Include="Input\KeyboardCapture.cs" />
+    <Compile Include="Input\KeyboardSimulator.cs" />
+    <Compile Include="Input\KeyboardManager.cs" />
     <Compile Include="Models\AudioPacket.cs" />
     <Compile Include="Models\FecGroup.cs" />
     <Compile Include="Networking\FecXor.cs" />

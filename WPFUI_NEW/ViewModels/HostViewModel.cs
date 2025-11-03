@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using Core.Networking;
 using RealTimeUdpStream.Core.Audio;
+using RealTimeUdpStream.Core.Input;
 using RealTimeUdpStream.Core.Models;
 using System;
 using System.Diagnostics;
@@ -26,6 +27,7 @@ namespace WPFUI_NEW.ViewModels
 
         private UdpPeer _sharedUdpPeer; // Peer chia sẻ
         private AudioManager _audioManager; // Quản lý audio
+        private KeyboardManager _keyboardManager; // Quản lý keyboard
 
         [ObservableProperty] private BitmapSource previewImage = null!; // Initialize non-nullable fields
         [ObservableProperty] private string _streamButtonContent = "Bắt đầu Host";
@@ -45,6 +47,7 @@ namespace WPFUI_NEW.ViewModels
             _cancellationTokenSource = null!; // Mark as nullable or initialize properly
             _sharedUdpPeer = null!; // Mark as nullable or initialize properly
             _audioManager = null!; // Mark as nullable or initialize properly
+            _keyboardManager = null!; // Mark as nullable or initialize properly
         }
 
         private async Task ToggleStreamingAsync()
@@ -60,6 +63,11 @@ namespace WPFUI_NEW.ViewModels
                 _audioManager?.Dispose();
                 _audioManager = null;
                 Debug.WriteLine("[Host] AudioManager dừng và hủy.");
+
+                _keyboardManager?.StopSimulation();
+                _keyboardManager?.Dispose();
+                _keyboardManager = null;
+                Debug.WriteLine("[Host] KeyboardManager dừng và hủy.");
 
                 if (_screenSender != null)
                 {
@@ -89,6 +97,11 @@ namespace WPFUI_NEW.ViewModels
                     const int SERVER_PORT = 12000;
 
                     _sharedUdpPeer = new UdpPeer(SERVER_PORT); // Tạo UdpPeer
+                    
+                    // BAT DAU LANG NGHE UDP - QUAN TRONG!
+                    _ = Task.Run(() => _sharedUdpPeer.StartReceivingAsync(), _cancellationTokenSource.Token);
+                    Console.WriteLine("[HOST] UdpPeer bat dau lang nghe tren port 12000");
+                    Debug.WriteLine("[Host] UdpPeer StartReceivingAsync called.");
 
                     _screenProcessor = ScreenProcessor.Instance;
                     _screenProcessor.Start();
@@ -106,6 +119,12 @@ namespace WPFUI_NEW.ViewModels
                     //_audioManager.StartAudioStreaming(AudioInputType.Microphone); // Bắt đầu ghi âm mic
 
                     Debug.WriteLine("[Host] AudioManager created and started.");
+
+                    // HOST mode = TRUE = SIMULATE (nhận từ CLIENT và giả lập)
+                    _keyboardManager = new KeyboardManager(_sharedUdpPeer, isClientMode: true);
+                    _keyboardManager.StartSimulation(); // HOST NHẬN và GIẢ LẬP
+                    Console.WriteLine("[HOST] Bat che do SIMULATION - se nhan va gia lap phim YGHJ");
+                    Debug.WriteLine("[Host] KeyboardManager SIMULATION started - se gia lap phim nhan tu CLIENT.");
 
                     // Bỏ await để không block UI thread
                     _ = Task.Run(() => _screenSender.SendScreenLoopAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
@@ -167,6 +186,8 @@ namespace WPFUI_NEW.ViewModels
                 _audioManager.SetTargetEndPoint(clientEndPoint);
                 
                 File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] ✅ Target endpoint SET for audio!{Environment.NewLine}");
+
+                Debug.WriteLine("[Host] ✅ Client connected - Keyboard simulation already running.");
 
                 App.Current.Dispatcher.Invoke(() =>
                 {

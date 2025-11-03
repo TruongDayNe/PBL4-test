@@ -181,13 +181,13 @@ namespace RealTimeUdpStream.Core.Audio
                     }
                     
                     audioData = convertedData;
-                    Console.WriteLine($"✓ Converted {sampleCount} samples from float32 to int16");
+                    // Console.WriteLine($"✓ Converted {sampleCount} samples from float32 to int16"); // TAT LOG
                 }
                 
                 // Check sample rate (System Audio might be 44100Hz, need 48000Hz)
                 if (_inputType == AudioInputType.SystemAudio && _captureFormat.SampleRate != StandardFormat.SampleRate)
                 {
-                    Console.WriteLine($"⚠️ SAMPLE RATE MISMATCH! Captured: {_captureFormat.SampleRate}Hz, Target: {StandardFormat.SampleRate}Hz");
+                    // Console.WriteLine($"⚠️ SAMPLE RATE MISMATCH! Captured: {_captureFormat.SampleRate}Hz, Target: {StandardFormat.SampleRate}Hz"); // TAT LOG
                     Console.WriteLine($"⚠️ THIS WILL CAUSE PITCH SHIFT! Need resampling!");
                     // TODO: Add resampling
                 }

@@ -1,20 +1,20 @@
-using RealTimeUdpStream.Core.Models;
+﻿using RealTimeUdpStream.Core.Models;
 using Core.Networking;
 using System;
 using System.Diagnostics;
-
+using System.IO;
 using System.Threading.Tasks;
 
 namespace RealTimeUdpStream.Core.Audio
 {
     /// <summary>
-    /// Qu?n l� t?ng th? audio streaming - capture, transmission, v� playback
+    /// Quản lý tổng thể audio streaming - capture, transmission, và playback
     /// </summary>
     public class AudioManager : IDisposable
     {
         private readonly UdpPeer _udpPeer;
         private readonly AudioConfig _config;
-        private readonly bool _isClientMode; // true = CLIENT (c� delay), false = HOST (kh�ng delay)
+        private readonly bool _isClientMode; // true = CLIENT (có delay), false = HOST (không delay)
         private AudioCapture _audioCapture;
         private AudioPlayback _audioPlayback;
         private bool _disposed = false;
@@ -25,7 +25,7 @@ namespace RealTimeUdpStream.Core.Audio
         private System.Net.IPEndPoint _targetEndPoint;
 
         // Packet types for audio
-        private const byte AUDIO_PACKET_TYPE = 0x11; // Ph?i kh?p v?i UdpPacketType.Audio
+        private const byte AUDIO_PACKET_TYPE = 0x11; // Phải khớp với UdpPacketType.Audio
 
         public event Action<string> OnStatusChanged;
         public event Action<Exception> OnError;
@@ -45,15 +45,15 @@ namespace RealTimeUdpStream.Core.Audio
 
         public void SetTargetEndPoint(System.Net.IPEndPoint targetEndPoint)
         {
-            Debug.WriteLine($"?? SetTargetEndPoint CALLED: {targetEndPoint}, _isStreaming={_isStreaming}, Instance={GetHashCode()}");
+            Debug.WriteLine($"🎯 SetTargetEndPoint CALLED: {targetEndPoint}, _isStreaming={_isStreaming}, Instance={GetHashCode()}");
             _targetEndPoint = targetEndPoint;
-            Debug.WriteLine($"?? _targetEndPoint NOW SET to: {_targetEndPoint}");
+            Debug.WriteLine($"🎯 _targetEndPoint NOW SET to: {_targetEndPoint}");
         }
 
         private void InitializeComponents()
         {
-            // CLIENT mode: c� delay 3 gi�y d? d? ph�n bi?t
-            // HOST mode: kh�ng delay, ph�t ngay
+            // CLIENT mode: có delay 3 giây để dễ phân biệt
+            // HOST mode: không delay, phát ngay
             _audioPlayback = new AudioPlayback(_config, enableDelay: _isClientMode, delayMs: 3000);
             Debug.WriteLine($"AudioManager initialized - Mode: {(_isClientMode ? "CLIENT (3s delay)" : "HOST (no delay)")}");
         }
@@ -120,10 +120,7 @@ namespace RealTimeUdpStream.Core.Audio
 
             _isReceiving = true;
 
-            Debug.WriteLine($"StartAudioReceiving called - Mode: {(_isClientMode ? "CLIENT" : "HOST")}");
-            Debug.WriteLine($"AudioPlayback delay enabled: {_audioPlayback?.IsDelayEnabled}, Duration: {_audioPlayback?.DelayDurationMs}ms");
-
-            // LOG d? verify mode
+            // LOG để verify mode
             Debug.WriteLine($"[AudioManager] StartAudioReceiving - Mode: {(_isClientMode ? "CLIENT" : "HOST")}, Delay: {(_isClientMode ? "ENABLED (3s)" : "DISABLED")}");
             Debug.WriteLine($"[AudioManager] AudioPlayback settings - Delay Enabled: {_audioPlayback?.IsDelayEnabled}, Duration: {_audioPlayback?.DelayDurationMs}ms");
 
@@ -133,13 +130,9 @@ namespace RealTimeUdpStream.Core.Audio
                 try
                 {
                     await _udpPeer.StartReceivingAsync();
-                    Console.WriteLine("[AudioManager] Started UDP receiving for audio packets");
-                    Debug.WriteLine("UDP receiving started successfully");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[AudioManager] Failed to start UDP receiving: {ex.Message}");
-                    Debug.WriteLine($"ERROR starting UDP receiving: {ex.Message}");
                     OnError?.Invoke(ex);
                 }
             });
@@ -160,9 +153,6 @@ namespace RealTimeUdpStream.Core.Audio
 
         private void SendAudioPacket(AudioPacket audioPacket)
         {
-            
-            Debug.WriteLine($"[AudioManager] SendAudioPacket called. Target: {_targetEndPoint?.ToString() ?? "NULL"}");
-
             if (!_isStreaming || _disposed || _targetEndPoint == null)
             {
                 return;
@@ -170,10 +160,10 @@ namespace RealTimeUdpStream.Core.Audio
 
             try
             {
-                // Serialize AudioPacket th�nh byte array
+                // Serialize AudioPacket thành byte array
                 var packetData = SerializeAudioPacket(audioPacket);
 
-                // T?o UdpPacket v?i audio data
+                // Tạo UdpPacket với audio data
                 var header = new UdpPacketHeader
                 {
                     Version = 1,
@@ -186,13 +176,12 @@ namespace RealTimeUdpStream.Core.Audio
 
                 var udpPacket = new UdpPacket(header, new ArraySegment<byte>(packetData));
 
-                // G?i async d?n target endpoint
+                // Gửi async đến target endpoint
                 _ = Task.Run(async () =>
                 {
                     try
                     {
                         await _udpPeer.SendToAsync(udpPacket, _targetEndPoint);
-                        Console.WriteLine($"[AudioManager] Sent audio packet: {packetData.Length} bytes to {_targetEndPoint}");
                     }
                     catch (Exception ex)
                     {
@@ -213,9 +202,6 @@ namespace RealTimeUdpStream.Core.Audio
 
             try
             {
-                Debug.WriteLine($"Received audio packet: Type={packet.Header.PacketType:X2}, Size={packet.Payload.Count} bytes, Seq={packet.Header.SequenceNumber}");
-                Console.WriteLine($"[AudioManager] Received audio packet: {packet.Payload.Count} bytes from {packet.Header.SequenceNumber}");
-
                 var payloadData = new byte[packet.Payload.Count];
                 Buffer.BlockCopy(packet.Payload.Array, packet.Payload.Offset, payloadData, 0, packet.Payload.Count);
 
@@ -223,21 +209,12 @@ namespace RealTimeUdpStream.Core.Audio
                 if (audioPacket != null)
                 {
                     _audioPlayback.QueueAudioPacket(audioPacket);
-                    Debug.WriteLine($"Queued audio for playback: {audioPacket.AudioData.Count} bytes");
-                    Console.WriteLine($"[AudioManager] Queued audio packet for playback: {audioPacket.AudioData.Count} bytes");
-                }
-                else
-                {
-                    Debug.WriteLine("ERROR: Failed to deserialize audio packet!");
-                    Console.WriteLine("[AudioManager] Failed to deserialize audio packet");
                 }
             }
             catch (Exception ex)
             {
                 OnError?.Invoke(ex);
-                Debug.WriteLine($"ERROR handling packet: {ex.Message}");
                 Debug.WriteLine($"Error handling received audio packet: {ex.Message}");
-                Console.WriteLine($"[AudioManager] Error handling packet: {ex.Message}");
             }
         }
 
@@ -302,5 +279,3 @@ namespace RealTimeUdpStream.Core.Audio
         }
     }
 }
-
-

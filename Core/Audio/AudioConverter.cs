@@ -36,14 +36,11 @@ namespace RealTimeUdpStream.Core.Audio
             // If formats match exactly, no conversion needed
             if (FormatsMatch(sourceFormat, _targetFormat))
             {
-                Console.WriteLine("[AudioConverter] Formats match - no conversion needed");
                 return audioData;
             }
 
             try
             {
-                Console.WriteLine($"[AudioConverter] Converting: {sourceFormat} → {_targetFormat}");
-                
                 // CRITICAL: Only handle float32→int16 conversion for same sample rate
                 if (sourceFormat.Encoding == WaveFormatEncoding.IeeeFloat && 
                     sourceFormat.BitsPerSample == 32 &&
@@ -51,12 +48,10 @@ namespace RealTimeUdpStream.Core.Audio
                     _targetFormat.BitsPerSample == 16 &&
                     sourceFormat.SampleRate == _targetFormat.SampleRate) // Same sample rate!
                 {
-                    Console.WriteLine("[AudioConverter] Using DIRECT float32→int16 conversion (no resampling)");
                     return ConvertFloat32ToInt16(audioData, bytesRecorded, sourceFormat.Channels, _targetFormat.Channels);
                 }
                 
                 // For different sample rates or complex conversions, use NAudio
-                Console.WriteLine("[AudioConverter] Using NAudio WaveFormatConversionStream");
                 using (var sourceStream = new RawSourceWaveStream(audioData, 0, bytesRecorded, sourceFormat))
                 using (var conversionStream = new WaveFormatConversionStream(_targetFormat, sourceStream))
                 {
@@ -65,21 +60,17 @@ namespace RealTimeUdpStream.Core.Audio
                     
                     if (convertedBytes <= 0)
                     {
-                        Console.WriteLine("[AudioConverter] WARNING: Conversion produced 0 bytes!");
                         return audioData;
                     }
                     
                     // Trim to actual size
                     byte[] result = new byte[convertedBytes];
                     Array.Copy(convertedData, result, convertedBytes);
-                    Console.WriteLine($"[AudioConverter] Conversion successful: {bytesRecorded} → {convertedBytes} bytes");
                     return result;
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[AudioConverter] ERROR: Conversion failed - {ex.Message}");
-                Console.WriteLine($"[AudioConverter] Returning original audio data");
                 return audioData; // Return original data if conversion fails
             }
         }
