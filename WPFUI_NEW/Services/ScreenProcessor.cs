@@ -56,26 +56,28 @@ namespace WPFUI_NEW.Services
         /// <summary>
         /// Hình ảnh màn hình desktop hiện tại
         /// </summary>
-        public Image CurrentScreenImage
+        public void ProcessScreenImage(Action<Image> processingAction)
         {
-            get
-            {
-                try
-                {
-                    // Chờ đợi cho đến khi khung hình đầu tiên được chụp
-                    _firstFrameReady.Wait();
+            if (_isDisposed || this._rwLocker == null) return;
 
-                    this._rwLocker.EnterReadLock();
-                    // Tạo một bản sao để tránh vấn đề "tham chiếu vs copy"
-                    return new Bitmap(this._currentScreenImage);
-                }
-                catch (Exception ex)
+            try
+            {
+                // Chờ đợi khung hình đầu tiên (vẫn giữ logic này)
+                _firstFrameReady.Wait();
+
+                this._rwLocker.EnterReadLock();
+                if (this._currentScreenImage != null)
                 {
-                    string messge = String.Format("Không thể trả về hình ảnh\n{0}\n{1}", ex.Message, ex.StackTrace);
-                    Debug.WriteLine(messge);
-                    return null;
+                    processingAction(this._currentScreenImage); // Gọi action với ảnh GỐC
                 }
-                finally
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Lỗi khi xử lý ảnh trong ReadLock: {ex.Message}");
+            }
+            finally
+            {
+                if (this._rwLocker != null && this._rwLocker.IsReadLockHeld)
                 {
                     this._rwLocker.ExitReadLock();
                 }
@@ -195,12 +197,12 @@ namespace WPFUI_NEW.Services
                 catch (ScreenProcessorException sdex)
                 {
                     Debug.WriteLine("Không thể cập nhật thông tin khung hình (DesktopDuplicationException)\n{0}\n{1}", sdex.Message, sdex.StackTrace);
-                    break;
+                    continue;
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine("Không thể cập nhật thông tin khung hình (Exception)\n{0}\n{1}", ex.Message, ex.StackTrace);
-                    break;
+                    continue;
                 }
 
                 // Nếu đến được đây, screenInfo đã được lấy thành công

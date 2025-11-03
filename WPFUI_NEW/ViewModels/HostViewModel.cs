@@ -166,12 +166,15 @@ namespace WPFUI_NEW.ViewModels
 
         private void HandleFrameCaptured(Image frame)
         {
+            var bitmapSource = ToBitmapSource(frame);
+
+            // 2. Chỉ đẩy công việc nhẹ (gán) lên luồng UI
             App.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
-                PreviewImage = ToBitmapSource(frame);
+                PreviewImage = bitmapSource;
             }));
 
-            // frame.Dispose() vẫn ở đây là đúng
+            // 3. Xóa ảnh gốc (vẫn ở luồng nền)
             frame.Dispose();
         }
 
@@ -180,27 +183,50 @@ namespace WPFUI_NEW.ViewModels
         public static BitmapSource ToBitmapSource(Image image)
         {
             if (image == null) return null;
-            Bitmap bitmap = null;
+
+            // SỬA ĐỔI QUAN TRỌNG:
+            // Không tạo 'new Bitmap(image)'! Chỉ cần ép kiểu.
+            Bitmap bitmap = image as Bitmap;
+            if (bitmap == null)
+            {
+                Debug.WriteLine("Lỗi ToBitmapSource: Ảnh nhận được không phải là Bitmap.");
+                return null; // Không thể xử lý nếu không phải là Bitmap
+            }
+
             System.Drawing.Imaging.BitmapData bitmapData = null;
             try
             {
-                bitmap = new Bitmap(image);
+                // Khóa bits của ảnh GỐC (đang được ReadLock từ ScreenSender)
                 bitmapData = bitmap.LockBits(
                   new Rectangle(0, 0, bitmap.Width, bitmap.Height),
                   System.Drawing.Imaging.ImageLockMode.ReadOnly,
-                  System.Drawing.Imaging.PixelFormat.Format32bppRgb);
+                  bitmap.PixelFormat); // SỬA ĐỔI: Dùng PixelFormat của bitmap gốc
+
+                // Kiểm tra xem pixel format có phải là 32bpp hay không
+                // (Nếu không, bạn cần logic chuyển đổi, nhưng giả sử nó là 32bpp)
+                var pixelFormat = System.Windows.Media.PixelFormats.Bgr32;
+                if (bitmap.PixelFormat != System.Drawing.Imaging.PixelFormat.Format32bppRgb && bitmap.PixelFormat != System.Drawing.Imaging.PixelFormat.Format32bppArgb)
+                {
+                    // Nếu format không đúng, hàm Create có thể thất bại
+                    // Tạm thời vẫn dùng Bgr32
+                    Debug.WriteLine("Cảnh báo: PixelFormat của ảnh gốc không phải là 32bpp.");
+                }
+
 
                 var bitmapSource = BitmapSource.Create(
                   bitmapData.Width, bitmapData.Height,
                   bitmap.HorizontalResolution, bitmap.VerticalResolution,
-                  System.Windows.Media.PixelFormats.Bgr32,
+                  pixelFormat, // Giả định là Bgr32
                   null,
                   bitmapData.Scan0, bitmapData.Stride * bitmapData.Height, bitmapData.Stride);
+
                 bitmapSource.Freeze(); // Quan trọng cho đa luồng
-                return bitmapSource;
+                return bitmapSource;
             }
             catch (Exception ex)
             {
+                // Lỗi "Object is currently in use elsewhere" thường xảy ra ở đây
+                // nếu LockBits bị gọi sai.
                 Debug.WriteLine($"Lỗi ToBitmapSource: {ex.Message}");
                 return null;
             }
@@ -208,8 +234,8 @@ namespace WPFUI_NEW.ViewModels
             {
                 if (bitmapData != null)
                 {
-                    // SỬA LỖI: Dùng 'bitmap' thay vì '_bitmap' không tồn tại
-                    bitmap?.UnlockBits(bitmapData);
+                    // Luôn mở khóa bits
+                    bitmap?.UnlockBits(bitmapData);
                 }
             }
         }

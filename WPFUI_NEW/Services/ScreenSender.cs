@@ -76,22 +76,31 @@ namespace WPFUI_NEW.Services
                         continue;
                     }
 
-                    byte[] largeData;
-                    Image imageForPreview = null;
+                    // --- ĐOẠN CODE THAY THẾ MỚI --- (BẮT ĐẦU)
+                    byte[] largeData = null;
 
-                    using (Image img = _screenProcessor.CurrentScreenImage)
+                    // SỬ DỤNG PHƯƠNG THỨC MỚI CỦA SCREEN PROCESSOR
+                    _screenProcessor.ProcessScreenImage(img =>
                     {
-                        if (img == null) continue;
+                        // 'img' ở đây là ảnh GỐC, đang được ReadLock
+                        if (img == null) return;
 
-                        imageForPreview = (Image)img.Clone();
+                        // 1. Nén ảnh gốc thành JPEG
                         using (var ms = new MemoryStream())
                         {
                             img.Save(ms, JpegCodec, _encoderParams);
                             largeData = ms.ToArray();
                         }
-                    }
 
-                    OnFrameCaptured?.Invoke(imageForPreview);
+                        // 2. Gửi ảnh GỐC đi để preview
+                        // KHÔNG CLONE() NỮA!
+                        OnFrameCaptured?.Invoke(img);
+                    });
+
+                    if (largeData == null) // Bỏ qua nếu không lấy được ảnh
+                    {
+                        continue;
+                    }
 
                     int maxPayloadSize = _peer.MaximumTransferUnit - PacketBuilder.HeaderSize;
                     int totalChunks = (int)Math.Ceiling((double)largeData.Length / maxPayloadSize);
