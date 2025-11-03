@@ -142,10 +142,11 @@ namespace WPFUI_NEW.ViewModels
         {
             // Logic y hệt HostViewModel:
             // Gửi ảnh nhận được từ luồng mạng về luồng UI
-            App.Current.Dispatcher.Invoke(() =>
+            // Dùng BeginInvoke để không khóa luồng nhận dữ liệu
+            App.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
                 ReceivedImage = frameSource;
-            });
+            }));
         }
         public void Cleanup()
         {

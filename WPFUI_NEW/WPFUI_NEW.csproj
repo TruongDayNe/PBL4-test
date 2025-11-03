@@ -1,28 +1,53 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>true</UseWPF>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
-    <PackageReference Include="System.Drawing.Common" Version="9.0.10" />
-    <PackageReference Include="Verify.CommunityToolkit.Mvvm" Version="1.1.0" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+		<PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
+		<PackageReference Include="NAudio.WinMM" Version="2.2.1" />
+		<PackageReference Include="SharpDX" Version="4.2.0" />
+		<PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
+		<PackageReference Include="System.Drawing.Common" Version="9.0.10" />
+		<PackageReference Include="Verify.CommunityToolkit.Mvvm" Version="1.1.0" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Core\Core.csproj" />
-    <ProjectReference Include="..\ScreenDublicator\ScreenDublicator.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Core\Core.csproj" />
+		<ProjectReference Include="..\ScreenDublicator\ScreenDublicator.csproj" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Page Update="MainWindow.xaml">
-      <SubType>Designer</SubType>
-    </Page>
-  </ItemGroup>
+	<ItemGroup>
+		<Compile Update="Converters\InvertedBooleanToVisibilityConverter.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Views\ClientConnectView.xaml.cs">
+			<SubType>Code</SubType>
+			<DependentUpon>ClientConnectView.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Views\ClientView.xaml.cs">
+			<SubType>Code</SubType>
+			<DependentUpon>ClientView.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Views\HostPreStreamView.xaml.cs">
+			<SubType>Code</SubType>
+			<DependentUpon>HostPreStreamView.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Views\HostView.xaml.cs">
+			<SubType>Code</SubType>
+			<DependentUpon>HostView.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Views\SelectionView.xaml.cs">
+			<SubType>Code</SubType>
+			<DependentUpon>SelectionView.xaml</DependentUpon>
+		</Compile>
+	</ItemGroup>
 
 </Project>

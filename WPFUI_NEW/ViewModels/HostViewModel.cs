@@ -166,7 +166,12 @@ namespace WPFUI_NEW.ViewModels
 
         private void HandleFrameCaptured(Image frame)
         {
-            App.Current.Dispatcher.Invoke(() => { PreviewImage = ToBitmapSource(frame); });
+            App.Current.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                PreviewImage = ToBitmapSource(frame);
+            }));
+
+            // frame.Dispose() vẫn ở đây là đúng
             frame.Dispose();
         }
 

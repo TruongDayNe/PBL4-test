@@ -207,30 +207,37 @@ namespace WPFUI_NEW.Services
                 // Cập nhật tài nguyên chia sẻ (dùng lock)
                 try
                 {
-                    // Đây là cấu trúc try-finally an toàn để dùng lock
-                    this._rwLocker.EnterWriteLock(); // Chỉ khóa sau khi đã có dữ liệu
+                    // Đây là cấu trúc try-finally an toàn để dùng lock
+                    this._rwLocker.EnterWriteLock(); // Chỉ khóa sau khi đã có dữ liệu
 
-                    // Xử lý ảnh cũ
-                    if (this._currentScreenImage != null)
+                    // Xử lý ảnh cũ
+                    if (this._currentScreenImage != null)
                     {
                         this._currentScreenImage.Dispose();
                     }
 
-                    // Gán ảnh mới
-                    this._currentScreenImage = screenInfo.ScreenImage;
+                    // Gán ảnh mới
+                    this._currentScreenImage = screenInfo.ScreenImage;
 
-                    // [SỬA LỖI] Cập nhật vị trí con trỏ
-               
-                    // this._currentCursorPosition = screenInfo.CursorPosition; 
+                    // === PHẦN SỬA LỖI BẮT ĐẦU ===
+                    // Kiểm tra xem frame này có thông tin con trỏ không
+                    if (screenInfo.PointerInfo != null)
+                    {
+                        // Chuyển đổi từ RawPoint (SharpDX) sang Point (System.Drawing)
+                        this._currentCursorPosition = new Point(
+                            screenInfo.PointerInfo.Position.X,
+                            screenInfo.PointerInfo.Position.Y
+                        );
+                    }
+                    // === PHẦN SỬA LỖI KẾT THÚC ===
 
-                    // Báo hiệu rằng khung hình đầu tiên đã sẵn sàng
-                    _firstFrameReady.Set();
+                    // Báo hiệu rằng khung hình đầu tiên đã sẵn sàng
+                    _firstFrameReady.Set();
                 }
                 finally
                 {
-                    // Luôn luôn giải phóng lock, vì EnterWriteLock() đã được gọi thành công
-                    // (nếu EnterWriteLock thất bại, nó sẽ ném lỗi và bị bắt bởi khối catch bên ngoài)
-                    this._rwLocker.ExitWriteLock();
+                    // Luôn luôn giải phóng lock
+                             this._rwLocker.ExitWriteLock();
                 }
 
                 // Điều chỉnh tốc độ khung hình 

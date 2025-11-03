@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WPFUI_NEW"
         xmlns:vm="clr-namespace:WPFUI_NEW.ViewModels"
-        xmlns:view="clr-namespace:WPFUI_NEW.Views"
+        xmlns:views="clr-namespace:WPFUI_NEW.Views" 
         mc:Ignorable="d"
         Title="Virtual Sofa" Height="720" Width="1080"
         WindowStartupLocation="CenterScreen"
@@ -16,21 +16,29 @@
     </Window.DataContext>
 
     <Window.Resources>
-        <DataTemplate DataType="{x:Type vm:HostViewModel}">
-            <view:HostView/>
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:ClientViewModel}">
-            <view:ClientView/>
-        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:SelectionViewModel}">
-            <view:SelectionView/>
+            <views:SelectionView/>
         </DataTemplate>
-        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <DataTemplate DataType="{x:Type vm:HostPreStreamViewModel}">
+            <views:HostPreStreamView/>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:ClientConnectViewModel}">
+            <views:ClientConnectView/>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:HostViewModel}">
+            <views:HostView/>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:ClientViewModel}">
+            <views:ClientView/>
+        </DataTemplate>
     </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
@@ -57,12 +65,10 @@
                 </Style>
             </Button.Style>
         </Button>
-        <ContentControl Grid.Row="2" 
+
+        <ContentControl Grid.Row="1" 
                         Content="{Binding CurrentViewModel}"
                         HorizontalContentAlignment="Stretch"
                         VerticalContentAlignment="Stretch"/>
-        <Image Grid.Row="1"
-               Source="Images/logo_white.png" 
-               Margin="417,108,417,397" Grid.RowSpan="2"/>
     </Grid>
 </Window>

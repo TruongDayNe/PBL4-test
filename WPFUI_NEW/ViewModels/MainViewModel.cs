@@ -1,67 +1,101 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System;
+using System.Windows.Input; // Cần cho ICommand
+using WPFUI_NEW.ViewModels; // Đảm bảo using này đúng
 
 namespace WPFUI_NEW.ViewModels
 {
+    // *** QUAN TRỌNG: Phải có 'partial' ***
     public partial class MainViewModel : ObservableObject
     {
-        // 1. Các ViewModel con
+        // === ViewModel con ===
         public HostViewModel HostViewModel { get; }
         public ClientViewModel ClientViewModel { get; }
         public SelectionViewModel SelectionViewModel { get; }
+        public HostPreStreamViewModel HostPreStreamViewModel { get; }
+        public ClientConnectViewModel ClientConnectViewModel { get; }
 
-        // 2. Thuộc tính ViewModel hiện tại
+        // === ViewModel hiện tại (Chỉ dùng [ObservableProperty]) ===
         [ObservableProperty]
-        // SỬA ĐỔI: Thêm attribute này
         [NotifyPropertyChangedFor(nameof(IsSelectionViewActive))]
-        private ObservableObject _currentViewModel;
+        private ObservableObject _currentViewModel; // Chỉ có field backing '_', không có property public thủ công
 
-        // 3. THUỘC TÍNH MỚI ĐỂ SỬA LỖI
-        /// <summary>
-        /// Trả về True nếu ViewModel hiện tại là SelectionViewModel.
-        /// Dùng để ẩn/hiện nút "Back".
-        /// </summary>
-        public bool IsSelectionViewActive => CurrentViewModel == SelectionViewModel;
+        // === Thuộc tính trạng thái ===
+        public bool IsSelectionViewActive => CurrentViewModel == SelectionViewModel; // Chỉ có định nghĩa này
 
-        // 4. Các Command điều hướng
+        // === Commands ===
         public IRelayCommand ShowHostViewCommand { get; }
         public IRelayCommand ShowClientViewCommand { get; }
         public IRelayCommand ShowSelectionViewCommand { get; }
+        public IRelayCommand NavigateToClientStreamCommand { get; }
 
+        // === Constructor ===
         public MainViewModel()
         {
-            // (Phần khởi tạo command giữ nguyên)
-            ShowHostViewCommand = new RelayCommand(ShowHostView);
-            ShowClientViewCommand = new RelayCommand(ShowClientView);
-            ShowSelectionViewCommand = new RelayCommand(ShowSelectionView);
+            // Khởi tạo command điều hướng nội bộ
+            NavigateToClientStreamCommand = new RelayCommand(NavigateToClientStream);
 
-            // (Phần khởi tạo ViewModel con giữ nguyên)
+            // Khởi tạo các ViewModel con, truyền command/action
             HostViewModel = new HostViewModel();
             ClientViewModel = new ClientViewModel();
+            // --- SỬA ĐỔI BẮT ĐẦU ---
+            // Tạo một command mới kết hợp cả BẮT ĐẦU STREAM và ĐIỀU HƯỚNG
+            var startAndNavigateCommand = new AsyncRelayCommand(async () =>
+            {
+                // 1. Điều hướng (chuyển view) TRƯỚC TIÊN
+                // Bằng cách này, người dùng sẽ thấy màn hình HostView ngay lập tức.
+                NavigateToHostStream();
+
+                // 2. Thử bắt đầu stream
+                try
+                {
+                    if (HostViewModel.StartStreamCommand.CanExecute(null))
+                    {
+                        // Thực thi logic stream.
+                        // Nếu có lỗi, HostViewModel sẽ tự hiển thị MessageBox.
+                        await HostViewModel.StartStreamCommand.ExecuteAsync(null);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Lỗi đã được HostViewModel xử lý (hiển thị),
+                    // chúng ta chỉ cần ghi log ở đây để gỡ lỗi nếu muốn.
+                    System.Diagnostics.Debug.WriteLine($"[MainViewModel] Lỗi khi thực thi lệnh stream: {ex.Message}");
+                    // Quan trọng: Không ném lại lỗi (re-throw) để ứng dụng không bị crash
+                    // và chúng ta vẫn ở lại màn hình HostView.
+                }
+            });
+
+
+            // Truyền command kết hợp mới này vào HostPreStreamViewModel
+            HostPreStreamViewModel = new HostPreStreamViewModel(startAndNavigateCommand);
+            // --- SỬA ĐỔI KẾT THÚC ---
+
+            ClientConnectViewModel = new ClientConnectViewModel(NavigateToClientStream);
+
+            // Khởi tạo command điều hướng chính
+            ShowHostViewCommand = new RelayCommand(ShowHostPreStreamView);
+            ShowClientViewCommand = new RelayCommand(ShowClientConnectView);
+            ShowSelectionViewCommand = new RelayCommand(ShowSelectionView);
+
+            // Khởi tạo SelectionViewModel
             SelectionViewModel = new SelectionViewModel(ShowHostViewCommand, ShowClientViewCommand);
 
-            // 5. Đặt màn hình ban đầu
-            _currentViewModel = SelectionViewModel;
-        }
-
-        private void ShowHostView()
-        {
-            CurrentViewModel = HostViewModel;
-        }
-
-        private void ShowClientView()
-        {
-            CurrentViewModel = ClientViewModel;
-        }
-
-        private void ShowSelectionView()
-        {
+            // Đặt ViewModel ban đầu (Source generator sẽ tạo 'CurrentViewModel' public)
             CurrentViewModel = SelectionViewModel;
         }
 
+        // === Hàm điều hướng ===
+        private void ShowHostPreStreamView() => CurrentViewModel = HostPreStreamViewModel;
+        private void ShowClientConnectView() => CurrentViewModel = ClientConnectViewModel;
+        private void ShowSelectionView() => CurrentViewModel = SelectionViewModel;
+        private void NavigateToHostStream() => CurrentViewModel = HostViewModel;
+        private void NavigateToClientStream() => CurrentViewModel = ClientViewModel;
+
+        // === Hàm Cleanup ===
         public void Cleanup()
         {
-            // Gọi cleanup trên các VM con
             (HostViewModel as HostViewModel)?.Cleanup();
             (ClientViewModel as ClientViewModel)?.Cleanup();
         }
