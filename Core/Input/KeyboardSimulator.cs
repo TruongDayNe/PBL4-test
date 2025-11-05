@@ -29,10 +29,10 @@ namespace RealTimeUdpStream.Core.Input
             // Ánh xạ mặc định: WASD (Client) -> YGHJ (Host)
             _keyMapping = keyMapping ?? new Dictionary<VirtualKey, VirtualKey>
             {
-                { VirtualKey.W, VirtualKey.Y },
-                { VirtualKey.A, VirtualKey.G },
-                { VirtualKey.S, VirtualKey.H },
-                { VirtualKey.D, VirtualKey.J },
+                { VirtualKey.W, VirtualKey.T },
+                { VirtualKey.A, VirtualKey.F },
+                { VirtualKey.S, VirtualKey.G },
+                { VirtualKey.D, VirtualKey.H },
                 { VirtualKey.Space, VirtualKey.Space },
                 { VirtualKey.Shift, VirtualKey.Shift },
                 { VirtualKey.Ctrl, VirtualKey.Ctrl }

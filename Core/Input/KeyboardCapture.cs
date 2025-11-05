@@ -138,10 +138,10 @@ namespace RealTimeUdpStream.Core.Input
         Space = 0x20,
         Shift = 0x10,
         Ctrl = 0x11,
-        Y = 0x59,
+        T = 0x54,
+        F = 0x46,
         G = 0x47,
-        H = 0x48,
-        J = 0x4A
+        H = 0x48
     }
 
     public enum KeyAction : byte

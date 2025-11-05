@@ -123,7 +123,7 @@ namespace WPFUI_NEW.ViewModels
                     // HOST mode = TRUE = SIMULATE (nhận từ CLIENT và giả lập)
                     _keyboardManager = new KeyboardManager(_sharedUdpPeer, isClientMode: true);
                     _keyboardManager.StartSimulation(); // HOST NHẬN và GIẢ LẬP
-                    Console.WriteLine("[HOST] Bat che do SIMULATION - se nhan va gia lap phim YGHJ");
+                    Console.WriteLine("[HOST] Bat che do SIMULATION - se nhan va gia lap phim TFGH");
                     Debug.WriteLine("[Host] KeyboardManager SIMULATION started - se gia lap phim nhan tu CLIENT.");
 
                     // Bỏ await để không block UI thread
