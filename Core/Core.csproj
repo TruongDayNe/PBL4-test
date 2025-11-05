@@ -36,6 +36,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Nefarius.ViGEm.Client, Version=1.21.256.0, Culture=neutral, PublicKeyToken=null, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nefarius.ViGEm.Client.1.21.256\lib\netstandard2.0\Nefarius.ViGEm.Client.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=9.0.0.9, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.9.0.9\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
     </Reference>
@@ -146,8 +149,11 @@
     <Compile Include="Audio\AudioManager.cs" />
     <Compile Include="Audio\AudioPlayback.cs" />
     <Compile Include="Input\KeyboardCapture.cs" />
+    <Compile Include="Input\IJKLKeyboardCapture.cs" />
     <Compile Include="Input\KeyboardSimulator.cs" />
     <Compile Include="Input\KeyboardManager.cs" />
+    <Compile Include="ViGEm\ViGEmController.cs" />
+    <Compile Include="ViGEm\ViGEmManager.cs" />
     <Compile Include="Models\AudioPacket.cs" />
     <Compile Include="Models\FecGroup.cs" />
     <Compile Include="Networking\FecXor.cs" />

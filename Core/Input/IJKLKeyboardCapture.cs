@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 namespace RealTimeUdpStream.Core.Input
 {
     /// <summary>
-    /// Capture keyboard input từ toàn hệ thống (HOST side)
+    /// Capture CHỈ phím IJKL (cho ViGEm controller)
     /// </summary>
-    public class KeyboardCapture : IDisposable
+    public class IJKLKeyboardCapture : IDisposable
     {
         [DllImport("user32.dll")]
         private static extern short GetAsyncKeyState(int vKey);
@@ -22,15 +22,15 @@ namespace RealTimeUdpStream.Core.Input
 
         public event Action<KeyEvent> OnKeyEvent;
 
-        public KeyboardCapture()
+        public IJKLKeyboardCapture()
         {
-            // Khởi tạo CHỈ với các phím WASD
+            // Khởi tạo CHỈ với các phím IJKL
             _previousKeyStates = new Dictionary<VirtualKey, bool>
             {
-                { VirtualKey.W, false },
-                { VirtualKey.A, false },
-                { VirtualKey.S, false },
-                { VirtualKey.D, false }
+                { VirtualKey.I, false },
+                { VirtualKey.J, false },
+                { VirtualKey.K, false },
+                { VirtualKey.L, false }
             };
         }
 
@@ -42,7 +42,7 @@ namespace RealTimeUdpStream.Core.Input
             _cancellationTokenSource = new CancellationTokenSource();
 
             Task.Run(() => CaptureLoop(_cancellationTokenSource.Token));
-            Debug.WriteLine("[KeyboardCapture] Started capturing keyboard input");
+            Debug.WriteLine("[IJKLKeyboardCapture] Started capturing IJKL keys");
         }
 
         public void StopCapture()
@@ -51,7 +51,7 @@ namespace RealTimeUdpStream.Core.Input
 
             _cancellationTokenSource?.Cancel();
             _isCapturing = false;
-            Debug.WriteLine("[KeyboardCapture] Stopped capturing keyboard input");
+            Debug.WriteLine("[IJKLKeyboardCapture] Stopped capturing IJKL keys");
         }
 
         private async Task CaptureLoop(CancellationToken token)
@@ -75,8 +75,8 @@ namespace RealTimeUdpStream.Core.Input
                                 Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
                             };
                             OnKeyEvent?.Invoke(keyEvent);
-                            Console.WriteLine($"[KeyboardCapture] Bat phim: {key} DOWN");
-                            Debug.WriteLine($"[KeyboardCapture] {key} DOWN");
+                            Console.WriteLine($"[IJKLKeyboardCapture] Bat phim: {key} DOWN");
+                            Debug.WriteLine($"[IJKLKeyboardCapture] {key} DOWN");
                         }
                         else if (!isPressed && wasPressedBefore)
                         {
@@ -88,8 +88,8 @@ namespace RealTimeUdpStream.Core.Input
                                 Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
                             };
                             OnKeyEvent?.Invoke(keyEvent);
-                            Console.WriteLine($"[KeyboardCapture] Nha phim: {key} UP");
-                            Debug.WriteLine($"[KeyboardCapture] {key} UP");
+                            Console.WriteLine($"[IJKLKeyboardCapture] Nha phim: {key} UP");
+                            Debug.WriteLine($"[IJKLKeyboardCapture] {key} UP");
                         }
 
                         _previousKeyStates[key] = isPressed;
@@ -103,7 +103,7 @@ namespace RealTimeUdpStream.Core.Input
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[KeyboardCapture] Error: {ex.Message}");
+                    Debug.WriteLine($"[IJKLKeyboardCapture] Error: {ex.Message}");
                 }
             }
         }
@@ -121,40 +121,5 @@ namespace RealTimeUdpStream.Core.Input
             _cancellationTokenSource?.Dispose();
             _disposed = true;
         }
-    }
-
-    /// <summary>
-    /// Virtual Key Codes (Windows)
-    /// </summary>
-    public enum VirtualKey : int
-    {
-        W = 0x57,
-        A = 0x41,
-        S = 0x53,
-        D = 0x44,
-        Space = 0x20,
-        Shift = 0x10,
-        Ctrl = 0x11,
-        T = 0x54,
-        F = 0x46,
-        G = 0x47,
-        H = 0x48,
-        I = 0x49,
-        J = 0x4A,
-        K = 0x4B,
-        L = 0x4C
-    }
-
-    public enum KeyAction : byte
-    {
-        Down = 0,
-        Up = 1
-    }
-
-    public struct KeyEvent
-    {
-        public VirtualKey Key;
-        public KeyAction Action;
-        public long Timestamp;
     }
 }

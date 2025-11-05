@@ -132,6 +132,11 @@ namespace Core.Networking
                     Console.WriteLine($"[UdpPeer] Nhan duoc KEYBOARD packet - chuyen cho subscribers");
                     OnPacketReceived?.Invoke(packet);
                     break;
+                case UdpPacketType.ViGEm:
+                    // ViGEm controller packet - goi tin doc lap, gui thang len
+                    Console.WriteLine($"[UdpPeer] Nhan duoc ViGEm packet - chuyen cho subscribers");
+                    OnPacketReceived?.Invoke(packet);
+                    break;
                 case UdpPacketType.Fec:
                     HandleFecPacket(packet);
                     break;

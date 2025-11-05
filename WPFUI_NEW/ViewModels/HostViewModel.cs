@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Core.Networking;
 using RealTimeUdpStream.Core.Audio;
 using RealTimeUdpStream.Core.Input;
+using RealTimeUdpStream.Core.ViGEm; // Add ViGEm namespace
 using RealTimeUdpStream.Core.Models;
 using System;
 using System.Diagnostics;
@@ -27,7 +28,8 @@ namespace WPFUI_NEW.ViewModels
 
         private UdpPeer _sharedUdpPeer; // Peer chia sẻ
         private AudioManager _audioManager; // Quản lý audio
-        private KeyboardManager _keyboardManager; // Quản lý keyboard
+        private KeyboardManager _keyboardManager; // Quản lý keyboard (WASD → TFGH)
+        private ViGEmManager _vigemManager; // Quản lý ViGEm controller (IJKL → Joystick)
 
         [ObservableProperty] private BitmapSource previewImage = null!; // Initialize non-nullable fields
         [ObservableProperty] private string _streamButtonContent = "Bắt đầu Host";
@@ -48,6 +50,7 @@ namespace WPFUI_NEW.ViewModels
             _sharedUdpPeer = null!; // Mark as nullable or initialize properly
             _audioManager = null!; // Mark as nullable or initialize properly
             _keyboardManager = null!; // Mark as nullable or initialize properly
+            _vigemManager = null!; // Mark as nullable or initialize properly
         }
 
         private async Task ToggleStreamingAsync()
@@ -68,6 +71,11 @@ namespace WPFUI_NEW.ViewModels
                 _keyboardManager?.Dispose();
                 _keyboardManager = null;
                 Debug.WriteLine("[Host] KeyboardManager dừng và hủy.");
+
+                _vigemManager?.StopSimulation(); // Stop ViGEm controller simulation
+                _vigemManager?.Dispose();
+                _vigemManager = null;
+                Debug.WriteLine("[Host] ViGEmManager dừng và hủy.");
 
                 if (_screenSender != null)
                 {
@@ -122,9 +130,15 @@ namespace WPFUI_NEW.ViewModels
 
                     // HOST mode = TRUE = SIMULATE (nhận từ CLIENT và giả lập)
                     _keyboardManager = new KeyboardManager(_sharedUdpPeer, isClientMode: true);
-                    _keyboardManager.StartSimulation(); // HOST NHẬN và GIẢ LẬP
-                    Console.WriteLine("[HOST] Bat che do SIMULATION - se nhan va gia lap phim TFGH");
+                    _keyboardManager.StartSimulation(); // HOST NHẬN và GIẢ LẬP phím WASD → TFGH
+                    Console.WriteLine("[HOST] KeyboardManager SIMULATION started - nhan va gia lap phim TFGH");
                     Debug.WriteLine("[Host] KeyboardManager SIMULATION started - se gia lap phim nhan tu CLIENT.");
+
+                    // ViGEm Manager - HOST simulates Xbox 360 controller from IJKL keys
+                    _vigemManager = new ViGEmManager(_sharedUdpPeer, isClientMode: false); // HOST = false = SIMULATE
+                    _vigemManager.StartSimulation(); // HOST NHẬN IJKL và GIẢ LẬP controller joystick
+                    Console.WriteLine("[HOST] ViGEmManager SIMULATION started - nhan IJKL va gia lap controller");
+                    Debug.WriteLine("[Host] ViGEmManager SIMULATION started - se gia lap controller tu IJKL.");
 
                     // Bỏ await để không block UI thread
                     _ = Task.Run(() => _screenSender.SendScreenLoopAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);

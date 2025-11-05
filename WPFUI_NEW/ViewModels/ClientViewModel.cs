@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Core.Networking;
 using RealTimeUdpStream.Core.Audio;
 using RealTimeUdpStream.Core.Input;
+using RealTimeUdpStream.Core.ViGEm; // Add ViGEm namespace
 using RealTimeUdpStream.Core.Models; // Thêm using cho TelemetrySnapshot
 using RealTimeUdpStream.Core.Networking; // Thêm using cho NetworkStats
 using System;
@@ -23,7 +24,8 @@ namespace WPFUI_NEW.ViewModels
 
         private UdpPeer _sharedUdpPeer; // Peer chia sẻ
         private AudioManager _audioManager;
-        private KeyboardManager _keyboardManager; // Quản lý keyboard
+        private KeyboardManager _keyboardManager; // Quản lý keyboard (WASD)
+        private ViGEmManager _vigemManager; // Quản lý ViGEm controller (IJKL)
 
         // --- Thuộc tính cho Telemetry ---
         [ObservableProperty] private string _pingText = "---";
@@ -48,6 +50,7 @@ namespace WPFUI_NEW.ViewModels
             _sharedUdpPeer = null!; // Mark as nullable or initialize properly
             _audioManager = null!; // Mark as nullable or initialize properly
             _keyboardManager = null!; // Mark as nullable or initialize properly
+            _vigemManager = null!; // Mark as nullable or initialize properly
             _receivedImage = null!; // Mark as nullable or initialize properly
 
             // Initialize telemetry timer
@@ -70,6 +73,9 @@ namespace WPFUI_NEW.ViewModels
                 _keyboardManager?.StopCapture();
                 _keyboardManager?.Dispose();
                 _keyboardManager = null;
+                _vigemManager?.StopCapture(); // Stop ViGEm capture
+                _vigemManager?.Dispose();
+                _vigemManager = null;
                 _screenReceiver?.Stop();
                 _screenReceiver?.Dispose();
                 _screenReceiver = null;
@@ -99,11 +105,20 @@ namespace WPFUI_NEW.ViewModels
                     // CLIENT mode = FALSE = CAPTURE (gửi phím cho HOST)
                     // Lấy HOST endpoint để gửi phím
                     var hostEndPoint = new System.Net.IPEndPoint(System.Net.IPAddress.Parse(HostIpAddress), 12000);
+                    
+                    // Keyboard Manager - WASD keys
                     _keyboardManager = new KeyboardManager(_sharedUdpPeer, isClientMode: false);
                     _keyboardManager.SetTargetEndPoint(hostEndPoint);
-                    _keyboardManager.StartCapture(); // CLIENT CAPTURE phím và GỬI cho HOST
-                    Console.WriteLine("[CLIENT] Bat che do CAPTURE - se gui phim WASD cho HOST");
+                    _keyboardManager.StartCapture(); // CLIENT CAPTURE phím WASD và GỬI cho HOST
+                    Console.WriteLine("[CLIENT] KeyboardManager CAPTURE started - gui phim WASD cho HOST");
                     Debug.WriteLine("[Client] KeyboardManager CAPTURE started - se gui phim WASD cho HOST.");
+                    
+                    // ViGEm Manager - IJKL keys for controller
+                    _vigemManager = new ViGEmManager(_sharedUdpPeer, isClientMode: true); // CLIENT = true = CAPTURE
+                    _vigemManager.SetTargetEndPoint(hostEndPoint);
+                    _vigemManager.StartCapture(); // CLIENT CAPTURE phím IJKL và GỬI cho HOST
+                    Console.WriteLine("[CLIENT] ViGEmManager CAPTURE started - gui phim IJKL cho HOST");
+                    Debug.WriteLine("[Client] ViGEmManager CAPTURE started - se gui phim IJKL cho HOST.");
                     
                     ConnectButtonContent = "Ngắt kết nối";
                     _telemetryTimer.Start();
