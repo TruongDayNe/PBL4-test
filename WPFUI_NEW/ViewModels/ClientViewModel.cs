@@ -98,9 +98,10 @@ namespace WPFUI_NEW.ViewModels
                     _screenReceiver = new ScreenReceiver(_sharedUdpPeer);
                     _screenReceiver.OnFrameReady += HandleFrameReady;
                     
-                    // TẮT DELAY TẠM THỜI ĐỂ TEST
+                    // TẮT DELAY - phát audio ngay lập tức
                     _audioManager = new AudioManager(_sharedUdpPeer, AudioConfig.CreateDefault(), isClientMode: false);
                     _audioManager.StartAudioReceiving();
+                    Console.WriteLine("[CLIENT] Audio delay DISABLED - playing immediately");
                     
                     // CLIENT mode = FALSE = CAPTURE (gửi phím cho HOST)
                     // Lấy HOST endpoint để gửi phím
