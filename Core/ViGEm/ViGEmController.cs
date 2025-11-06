@@ -20,6 +20,7 @@ namespace RealTimeUdpStream.Core.ViGEm
         private bool _isKPressed = false; // Xuống
         private bool _isJPressed = false; // Trái
         private bool _isLPressed = false; // Phải
+        private bool _isOPressed = false; // Nút A
 
         public ViGEmController()
         {
@@ -73,6 +74,15 @@ namespace RealTimeUdpStream.Core.ViGEm
         }
 
         /// <summary>
+        /// Xử lý phím O - Nút A trên Xbox controller
+        /// </summary>
+        public void SetOPressedState(bool pressed)
+        {
+            _isOPressed = pressed;
+            UpdateButtons();
+        }
+
+        /// <summary>
         /// Cập nhật trạng thái joystick dựa trên các phím đang nhấn
         /// </summary>
         private void UpdateJoystick()
@@ -100,6 +110,29 @@ namespace RealTimeUdpStream.Core.ViGEm
         }
 
         /// <summary>
+        /// Cập nhật trạng thái các nút bấm trên controller
+        /// </summary>
+        private void UpdateButtons()
+        {
+            if (_disposed) return;
+
+            // Set nút A (O key)
+            if (_isOPressed)
+            {
+                _controller.SetButtonState(Xbox360Button.A, true);
+                Console.WriteLine("[ViGEmController] Nut A PRESSED");
+            }
+            else
+            {
+                _controller.SetButtonState(Xbox360Button.A, false);
+                Console.WriteLine("[ViGEmController] Nut A RELEASED");
+            }
+
+            // Submit report để áp dụng thay đổi
+            _controller.SubmitReport();
+        }
+
+        /// <summary>
         /// Reset tất cả phím về trạng thái không nhấn
         /// </summary>
         public void ResetAll()
@@ -108,7 +141,9 @@ namespace RealTimeUdpStream.Core.ViGEm
             _isKPressed = false;
             _isJPressed = false;
             _isLPressed = false;
+            _isOPressed = false;
             UpdateJoystick();
+            UpdateButtons();
         }
 
         public void Dispose()

@@ -24,13 +24,14 @@ namespace RealTimeUdpStream.Core.Input
 
         public IJKLKeyboardCapture()
         {
-            // Khởi tạo CHỈ với các phím IJKL
+            // Khởi tạo CHỈ với các phím IJKL + O
             _previousKeyStates = new Dictionary<VirtualKey, bool>
             {
                 { VirtualKey.I, false },
                 { VirtualKey.J, false },
                 { VirtualKey.K, false },
-                { VirtualKey.L, false }
+                { VirtualKey.L, false },
+                { VirtualKey.O, false }
             };
         }
 

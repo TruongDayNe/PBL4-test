@@ -161,11 +161,12 @@ namespace RealTimeUdpStream.Core.ViGEm
         {
             if (!_isCapturing || _disposed || _targetEndPoint == null) return;
 
-            // Chỉ xử lý phím IJKL
+            // Chỉ xử lý phím IJKLO
             if (keyEvent.Key != VirtualKey.I && 
                 keyEvent.Key != VirtualKey.J && 
                 keyEvent.Key != VirtualKey.K && 
-                keyEvent.Key != VirtualKey.L)
+                keyEvent.Key != VirtualKey.L &&
+                keyEvent.Key != VirtualKey.O)
             {
                 return;
             }
@@ -286,6 +287,10 @@ namespace RealTimeUdpStream.Core.ViGEm
                 case VirtualKey.L:
                     _vigemController.SetLPressedState(isPressed);
                     Console.WriteLine($"[ViGEmManager] L key {(isPressed ? "PRESSED" : "RELEASED")} - Joystick RIGHT");
+                    break;
+                case VirtualKey.O:
+                    _vigemController.SetOPressedState(isPressed);
+                    Console.WriteLine($"[ViGEmManager] O key {(isPressed ? "PRESSED" : "RELEASED")} - Button A");
                     break;
             }
         }

@@ -142,7 +142,8 @@ namespace RealTimeUdpStream.Core.Input
         I = 0x49,
         J = 0x4A,
         K = 0x4B,
-        L = 0x4C
+        L = 0x4C,
+        O = 0x4F
     }
 
     public enum KeyAction : byte
