@@ -34,9 +34,9 @@ namespace RealTimeUdpStream.Core.Audio
             Debug.WriteLine($"[AudioPlayback] {message}");
         }
 
-        // Buffer management - INCREASED for smoother playback
-        private const int MAX_BUFFER_DURATION_MS = 2000; // 2 seconds maximum buffer (increased from 1s)
-        private const int MIN_BUFFER_DURATION_MS = 200;  // 200ms minimum before starting playback (increased from 100ms)
+        // Buffer management - OPTIMIZED for UDP streaming with jitter tolerance
+        private const int MAX_BUFFER_DURATION_MS = 3000; // 3 seconds maximum buffer
+        private const int MIN_BUFFER_DURATION_MS = 500;  // 500ms minimum before starting playback (higher for stability)
 
         // Delay data structure
         private class DelayedAudioData
@@ -55,8 +55,8 @@ namespace RealTimeUdpStream.Core.Audio
 
             InitializePlayback();
 
-            // Timer d? ki?m tra v� qu?n l� buffer
-            _bufferTimer = new Timer(ProcessAudioBuffer, null, 10, 10); // Check every 10ms
+            // Timer d? ki?m tra v� qu?n l� buffer (reduced frequency to reduce overhead)
+            _bufferTimer = new Timer(ProcessAudioBuffer, null, 20, 20); // Check every 20ms (reduced from 10ms)
             
             // Timer d? x? l� delay buffer (ch? c?n n?u c� delay)
             if (_enableDelay)
@@ -79,13 +79,14 @@ namespace RealTimeUdpStream.Core.Audio
             _waveProvider = new BufferedWaveProvider(waveFormat)
             {
                 BufferDuration = TimeSpan.FromMilliseconds(MAX_BUFFER_DURATION_MS),
-                DiscardOnBufferOverflow = false, // CHANGED: Don't discard - may cause crackling
-                ReadFully = false // Allow partial reads
+                DiscardOnBufferOverflow = true, // Discard old data when buffer full to prevent memory bloat
+                ReadFully = true // Read full buffers for smoother playback
             };
 
             _waveOut = new WaveOutEvent
             {
-                DesiredLatency = 300 // INCREASED: 300ms latency for smoother playback (was using config.BufferDurationMs)
+                DesiredLatency = 500, // INCREASED: 500ms latency for smoother UDP streaming
+                NumberOfBuffers = 3   // Use 3 buffers for better stability
             };
 
             _waveOut.Init(_waveProvider);
