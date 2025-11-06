@@ -116,14 +116,26 @@ namespace Core.Networking
             {
                 case UdpPacketType.Video:
                     // Video đi qua logic ghép mảnh (FEC/Reassembly)
-                    Console.WriteLine($"[UdpPeer] Processing Video packet");
+                    // Console.WriteLine($"[UdpPeer] Processing Video packet"); // TAT LOG
                     AddToFecGroup(packet);
                     HandleDataPacket(packet);
                     break;
                 case UdpPacketType.Audio:
                     // SỬA LỖI: Audio là gói tin độc lập, gửi thẳng lên
-                    Console.WriteLine($"[UdpPeer] Processing Audio packet");
+                    // Console.WriteLine($"[UdpPeer] Processing Audio packet Seq={packet.Header.SequenceNumber}, Size={packet.Payload.Count}"); // TAT LOG
+                    Debug.WriteLine($"[UdpPeer] >>> AUDIO PACKET RECEIVED: Seq={packet.Header.SequenceNumber}, Subscribers={OnPacketReceived?.GetInvocationList().Length ?? 0}");
                     OnPacketReceived?.Invoke(packet); // Không qua HandleDataPacket
+                    Debug.WriteLine($"[UdpPeer] >>> Audio packet dispatched to subscribers");
+                    break;
+                case UdpPacketType.Keyboard:
+                    // Keyboard packet - goi tin doc lap, gui thang len
+                    Console.WriteLine($"[UdpPeer] Nhan duoc KEYBOARD packet - chuyen cho subscribers");
+                    OnPacketReceived?.Invoke(packet);
+                    break;
+                case UdpPacketType.ViGEm:
+                    // ViGEm controller packet - goi tin doc lap, gui thang len
+                    Console.WriteLine($"[UdpPeer] Nhan duoc ViGEm packet - chuyen cho subscribers");
+                    OnPacketReceived?.Invoke(packet);
                     break;
                 case UdpPacketType.Fec:
                     HandleFecPacket(packet);

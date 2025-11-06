@@ -48,8 +48,7 @@ namespace WPFUI_NEW.Services
             // Chỉ xử lý các gói tin Video
             if (packet.Header.PacketType != (byte)UdpPacketType.Video)
             {
-                // Nếu packet này mượn buffer từ pool, hãy chắc chắn trả lại nó
-                packet.Dispose();
+                // KHÔNG DISPOSE audio packets - để AudioManager xử lý
                 return;
             }
 
