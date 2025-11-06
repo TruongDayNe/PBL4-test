@@ -185,12 +185,8 @@ namespace RealTimeUdpStream.Core.Audio
             {
                 Console.WriteLine($"[AudioManager] Received audio packet: {packet.Payload.Count} bytes from {packet.Header.SequenceNumber}");
 
-                // Tạo một mảng byte MỚI chỉ chứa dữ liệu payload thực sự.
-                var payloadData = new byte[packet.Payload.Count];
-                Buffer.BlockCopy(packet.Payload.Array, packet.Payload.Offset, payloadData, 0, packet.Payload.Count);
-
                 // Deserialize AudioPacket từ UDP data
-                var audioPacket = DeserializeAudioPacket(payloadData);
+                var audioPacket = DeserializeAudioPacket(packet.Payload.Array);
                 if (audioPacket != null)
                 {
                     _audioPlayback.QueueAudioPacket(audioPacket);
