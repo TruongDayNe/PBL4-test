@@ -27,7 +27,7 @@ namespace WPFUI_NEW.Services
         private const int FEC_GROUP_SIZE = 10;
 
         private readonly UdpPeer _peer;
-        private readonly ConcurrentBag<IPEndPoint> _clients = new ConcurrentBag<IPEndPoint>(); // Danh sách client
+        private  ConcurrentBag<IPEndPoint> _clients = new ConcurrentBag<IPEndPoint>(); // Danh sách client
         private readonly ScreenProcessor _screenProcessor;
         private static readonly ImageCodecInfo JpegCodec = GetEncoder(ImageFormat.Jpeg);
         private readonly EncoderParameters _encoderParams;
