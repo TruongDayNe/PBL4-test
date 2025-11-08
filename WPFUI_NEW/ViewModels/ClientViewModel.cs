@@ -23,6 +23,7 @@ namespace WPFUI_NEW.ViewModels
         private DispatcherTimer _telemetryTimer;
 
         private UdpPeer _sharedUdpPeer; // Peer chia sẻ
+        private System.Net.IPEndPoint _hostEndPoint;
         private AudioManager _audioManager;
         private KeyboardManager _keyboardManager; // Quản lý keyboard (WASD)
         private ViGEmManager _vigemManager; // Quản lý ViGEm controller (IJKL)
@@ -81,6 +82,7 @@ namespace WPFUI_NEW.ViewModels
                 _screenReceiver = null;
                 _sharedUdpPeer?.Dispose();
                 _sharedUdpPeer = null;
+                _hostEndPoint = null;
                 ConnectButtonContent = "Kết nối";
                 ReceivedImage = null;
                 PingText = "---";
@@ -105,7 +107,8 @@ namespace WPFUI_NEW.ViewModels
                     // CLIENT mode = FALSE = CAPTURE (gửi phím cho HOST)
                     // Lấy HOST endpoint để gửi phím
                     var hostEndPoint = new System.Net.IPEndPoint(System.Net.IPAddress.Parse(HostIpAddress), 12000);
-                    
+                    _hostEndPoint = hostEndPoint;
+
                     // Keyboard Manager - WASD keys
                     _keyboardManager = new KeyboardManager(_sharedUdpPeer, isClientMode: false);
                     _keyboardManager.SetTargetEndPoint(hostEndPoint);
@@ -135,7 +138,14 @@ namespace WPFUI_NEW.ViewModels
         // --- ĐƯỢC GỌI MỖI GIÂY ---
         private void OnTelemetryTick(object sender, EventArgs e)
         {
-            if (_sharedUdpPeer == null) return; // Kiểm tra _sharedUdpPeer     
+            if (_sharedUdpPeer == null) return; // Kiểm tra _sharedUdpPeer
+                                                // 
+            if (_hostEndPoint != null)
+            {
+                var pingPacket = new UdpPacket(UdpPacketType.Ping, 0);
+                // Gửi và không cần chờ (fire-and-forget)
+                _ = _sharedUdpPeer.SendToAsync(pingPacket, _hostEndPoint);
+            }
 
             // Dùng thuộc tính 'Stats' từ UdpPeer chung
             var snapshot = _sharedUdpPeer.Stats.GetSnapshot();

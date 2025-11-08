@@ -140,10 +140,25 @@ namespace Core.Networking
                 case UdpPacketType.Fec:
                     HandleFecPacket(packet);
                     break;
+                case UdpPacketType.Ping:
+                    // Nhận được Ping, gửi lại Pong với cùng Timestamp
+                    var pongPacket = new UdpPacket(UdpPacketType.Pong, 0);
+                    var pongHeader = pongPacket.Header;
+                    // Sửa đổi bản sao
+                    pongHeader.TimestampMs = packet.Header.TimestampMs;
+                    // Gán toàn bộ bản sao đã sửa đổi trở lại
+                    pongPacket.Header = pongHeader;
+                    _ = SendToAsync(pongPacket, source); // Gửi trả lại
+                    break;
+
+                case UdpPacketType.Pong:
+                    // Nhận được Pong, cập nhật chỉ số RTT
+                    _networkStats.UpdateRtt((long)packet.Header.TimestampMs);
+                    break;
+                // Các loại packet khác có thể được xử lý ở đây
                 default:
                     Console.WriteLine($"[UdpPeer] Unknown packet type: 0x{header.PacketType:X2}");
                     break;
-                    // Các loại packet khác có thể được xử lý ở đây
             }
         }
 
@@ -184,7 +199,7 @@ namespace Core.Networking
         {
             const int FEC_GROUP_SIZE = 10;
             var sequence = fecPacket.Header.SequenceNumber;
-            ushort groupStartChunkId = fecPacket.Header.ChunkId; // Theo quy ước từ ScreenSender
+            ushort groupStartChunkId = fecPacket.Header.ChunkId; // Theo quy ước từ `ScreenSender
 
             var sequenceFecGroups = _fecBuffers.GetOrAdd(sequence, _ => new ConcurrentDictionary<ushort, FecGroup>());
             var fecGroup = sequenceFecGroups.GetOrAdd(groupStartChunkId, _ => new FecGroup(groupStartChunkId, FEC_GROUP_SIZE));
@@ -202,6 +217,7 @@ namespace Core.Networking
                 {
                     if (recoveredPacket != null)
                     {
+                        _networkStats.LogFecPacketRecovered();
                         // Đưa gói tin đã phục hồi vào lại pipeline xử lý
                         HandleDataPacket(recoveredPacket);
                     }

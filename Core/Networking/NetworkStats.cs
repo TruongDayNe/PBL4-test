@@ -13,6 +13,8 @@ namespace RealTimeUdpStream.Core.Networking
         private readonly ConcurrentQueue<long> _pingHistory = new ConcurrentQueue<long>();
         private readonly ConcurrentQueue<DateTime> _packetSentTimestamps = new ConcurrentQueue<DateTime>();
         private readonly ConcurrentQueue<DateTime> _packetReceivedTimestamps = new ConcurrentQueue<DateTime>();
+        private long _fecPacketsRecovered = 0;
+        private long _lastFecPacketsRecovered = 0;
 
         //log để tính mất gói
         private readonly ConcurrentDictionary<uint, (long timestamp, bool acked)> _packetLog = new ConcurrentDictionary<uint, (long, bool)>();
@@ -36,6 +38,10 @@ namespace RealTimeUdpStream.Core.Networking
             {
                 _pingHistory.TryDequeue(out _);
             }
+        }
+        public void LogFecPacketRecovered()
+        {
+            Interlocked.Increment(ref _fecPacketsRecovered);
         }
 
         public void LogPacketSent(uint sequenceNumber, int size)
@@ -77,57 +83,43 @@ namespace RealTimeUdpStream.Core.Networking
             // TODO: Logic tính PacketLossRate cần được hoàn thiện ở UdpPeer
             if (_bitrateTimer.ElapsedMilliseconds >= 1000)
             {
-                // 1. Tính toán
-                // (Số byte * 8) -> ra bit. Chia 1024 -> ra Kilobit.
-                // Interlocked.Exchange trả về giá trị cũ VÀ reset nó về 0
                 _lastSentBitrateKbps = (Interlocked.Exchange(ref _bytesSentInSecond, 0) * 8) / 1024;
                 _lastReceivedBitrateKbps = (Interlocked.Exchange(ref _bytesReceivedInSecond, 0) * 8) / 1024;
+                // === BẮT ĐẦU SỬA LỖI ===
+                // Lấy số gói FEC khôi phục được trong 1s qua và reset bộ đếm
+                _lastFecPacketsRecovered = Interlocked.Exchange(ref _fecPacketsRecovered, 0);
+                // === KẾT THÚC SỬA LỖI ===
 
                 // 2. Reset đồng hồ
                 _bitrateTimer.Restart();
             }
 
             // --- LOGIC MỚI: TÍNH MẤT GÓI (PACKET LOSS) ---
-            double packetLossRate = 0.0;
-            long totalSent = _packetLog.Count;
-            long totalAcked = 0;
+            // === BẮT ĐẦU SỬA LỖI ===
+            // Thay thế hoàn toàn logic cũ
 
-            // Dọn dẹp log, xóa các gói tin cũ hơn 5 giây
+            double packetLossRate = 0.0;
+            // Tổng số gói thực nhận = số gói nhận được + số gói FEC đã cứu
+            long totalPacketsInSecond = _packetReceivedTimestamps.Count + _lastFecPacketsRecovered;
+
+            if (totalPacketsInSecond > 0)
+            {
+                // Tỷ lệ mất = (Số gói đã cứu) / (Tổng số gói)
+                packetLossRate = (double)_lastFecPacketsRecovered / totalPacketsInSecond;
+            }
+
+            // Dọn dẹp _packetLog (vẫn giữ lại để không bị rò rỉ bộ nhớ)
             var fiveSecondsAgo = DateTime.UtcNow.Ticks - (5 * TimeSpan.TicksPerSecond);
             var keysToRemove = new System.Collections.Generic.List<uint>();
-
             foreach (var entry in _packetLog)
             {
                 if (entry.Value.timestamp < fiveSecondsAgo)
-                {
-                    // Nếu quá cũ, đánh dấu để xóa
                     keysToRemove.Add(entry.Key);
-                }
-                else if (entry.Value.acked)
-                {
-                    // Nếu đã được ACK, đếm
-                    totalAcked++;
-                }
             }
-
-            // Thực hiện xóa
             foreach (var key in keysToRemove)
-            {
                 _packetLog.TryRemove(key, out _);
-            }
 
-            // Tính toán tỷ lệ
-            if (totalSent > 0)
-            {
-                // Tỷ lệ mất = (Tổng gửi - Tổng nhận) / Tổng gửi
-                // (Chỉ tính các gói trong 5 giây qua)
-                long relevantSent = totalSent - (keysToRemove.Count - totalAcked); // 
-                long relevantAcked = totalAcked;
-                if (relevantSent > 0)
-                {
-                    packetLossRate = (double)(relevantSent - relevantAcked) / relevantSent;
-                }
-            }
+            // === KẾT THÚC SỬA LỖI ===
 
             // Trả về kết quả
             return new TelemetrySnapshot
