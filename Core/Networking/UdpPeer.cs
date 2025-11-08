@@ -140,6 +140,15 @@ namespace Core.Networking
                 case UdpPacketType.Fec:
                     HandleFecPacket(packet);
                     break;
+
+                case UdpPacketType.Disconnect:
+                    Console.WriteLine($"[UdpPeer] Nhan duoc DISCONNECT packet - chuyen cho subscribers");
+                    OnPacketReceived?.Invoke(packet);
+                    break;
+                case UdpPacketType.Kick:
+                    Console.WriteLine($"[UdpPeer] Nhan duoc KICK packet - chuyen cho subscribers");
+                    OnPacketReceived?.Invoke(packet);
+                    break;
                 case UdpPacketType.Ping:
                     // Nhận được Ping, gửi lại Pong với cùng Timestamp
                     var pongPacket = new UdpPacket(UdpPacketType.Pong, 0);

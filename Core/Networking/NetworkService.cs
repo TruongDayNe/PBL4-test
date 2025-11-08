@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -12,7 +13,10 @@ namespace Core.Networking
     public class NetworkService
     {
         public const int HandshakePort = 12345;
-        public event Action<string> ClientConnected;
+        public event Action<string, string> ClientRequestReceived;
+        public event Action<string> ClientAccepted;
+
+        private readonly ConcurrentDictionary<string, TcpClient> _pendingClients = new ConcurrentDictionary<string, TcpClient>();
 
         private TcpListener _tcpListener; // Biến thành viên để có thể Stop() từ bên ngoài
 
@@ -36,7 +40,7 @@ namespace Core.Networking
                         Debug.WriteLine("[Host] Client mới đang kết nối...");
 
                         // Xử lý client này trên một Task riêng để quay lại vòng lặp Accept ngay
-                        Task.Run(() => HandleNewClient(client), token);
+                        _ = HandleNewClientAsync(client, token);
                     }
                     catch (SocketException ex) when (token.IsCancellationRequested)
                     {
@@ -63,6 +67,11 @@ namespace Core.Networking
             finally
             {
                 _tcpListener?.Stop();
+                foreach (var pair in _pendingClients)
+                {
+                    pair.Value.Close();
+                }
+                _pendingClients.Clear();
                 Debug.WriteLine("[Host] Đã dừng lắng nghe TCP.");
             }
         }
@@ -70,28 +79,106 @@ namespace Core.Networking
         /// <summary>
         /// Xử lý logic đọc IP từ một client TCP
         /// </summary>
-        private void HandleNewClient(TcpClient client)
+        private async Task HandleNewClientAsync(TcpClient client, CancellationToken token)
         {
+            // LẤY IP AN TOÀN: Lấy IP từ chính kết nối TCP, không tin Client
+            string clientIp = ((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString();
+
             try
             {
                 using (NetworkStream stream = client.GetStream())
                 {
                     byte[] buffer = new byte[1024];
-                    int bytesRead = stream.Read(buffer, 0, buffer.Length); // Dùng Read đồng bộ vì đang ở Task riêng
-                    string clientIp = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                    Debug.WriteLine($"[Host] Nhận được IP của Client: {clientIp}");
+                    var readTask = stream.ReadAsync(buffer, 0, buffer.Length, token);
+                    var timeoutTask = Task.Delay(TimeSpan.FromSeconds(10), token); // 10 giây để gửi request
 
-                    // Kích hoạt sự kiện để báo cho HostViewModel biết IP của Client
-                    ClientConnected?.Invoke(clientIp);
+                    if (await Task.WhenAny(readTask, timeoutTask) == timeoutTask)
+                    {
+                        // Timeout
+                        throw new TimeoutException("Client did not send request in time.");
+                    }
+
+                    // Nếu đến đây, readTask đã hoàn thành
+                    int bytesRead = await readTask;
+
+                    string request = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    string displayName = "Unknown Client";
+
+                        // Phân tích request (ví dụ: "CONNECT:MyPCName")
+                        if (request.StartsWith("CONNECT:"))
+                        {
+                            displayName = request.Substring(8);
+                        }
+
+                        Debug.WriteLine($"[Host] Nhận được yêu cầu từ: {clientIp} (Tên: {displayName})");
+
+                        // Thêm vào danh sách chờ và giữ kết nối TCP
+                        if (_pendingClients.TryAdd(clientIp, client))
+                        {
+                            // Kích hoạt sự kiện để báo cho UI
+                            ClientRequestReceived?.Invoke(clientIp, displayName);
+
+                            // Đợi cho đến khi Host chấp nhận/từ chối hoặc token bị hủy
+                            await Task.Delay(Timeout.Infinite, token);
+                        }
+                        else
+                        {
+                            // Đã có client từ IP này đang chờ
+                            await SendResponseAndClose(client, "REJECT:BUSY");
+                        }
+                    
                 }
+            }
+            catch (Exception ex) // Bắt lỗi (timeout, client ngắt kết nối...)
+            {
+                Debug.WriteLine($"[Host] Lỗi khi xử lý client {clientIp}: {ex.Message}");
+             
+            }
+            finally
+            {
+                // Đảm bảo client được đóng nếu nó vẫn còn trong danh sách
+                if (_pendingClients.TryRemove(clientIp, out var finalClient))
+                {
+                    finalClient.Close();
+                }
+            }
+        }
+
+        private async Task SendResponseAndClose(TcpClient client, string response)
+        {
+            try
+            {
+                byte[] responseBytes = Encoding.UTF8.GetBytes(response);
+                await client.GetStream().WriteAsync(responseBytes, 0, responseBytes.Length);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[Host] Lỗi khi xử lý client TCP: {ex.Message}");
+                Debug.WriteLine($"[Host] Lỗi khi gửi phản hồi: {ex.Message}");
             }
             finally
             {
                 client.Close();
+            }
+        }
+
+        // HÀM MỚI: Host gọi khi nhấn "Chấp nhận"
+        public async Task AcceptClientAsync(string clientIp)
+        {
+            if (_pendingClients.TryRemove(clientIp, out TcpClient client))
+            {
+                Debug.WriteLine($"[Host] Chấp nhận client: {clientIp}");
+                await SendResponseAndClose(client, "ACCEPT");
+                ClientAccepted?.Invoke(clientIp); // Báo cho HostViewModel bắt đầu stream
+            }
+        }
+
+        // HÀM MỚI: Host gọi khi nhấn "Từ chối"
+        public async Task RejectClientAsync(string clientIp)
+        {
+            if (_pendingClients.TryRemove(clientIp, out TcpClient client))
+            {
+                Debug.WriteLine($"[Host] Từ chối client: {clientIp}");
+                await SendResponseAndClose(client, "REJECT:DENIED");
             }
         }
 
@@ -113,25 +200,41 @@ namespace Core.Networking
                 using (TcpClient client = new TcpClient())
                 {
                     Debug.WriteLine($"[Client] Đang kết nối TCP tới Host {hostIpAddress}:{HandshakePort}...");
-                    await client.ConnectAsync(hostIpAddress, HandshakePort);
+                    // Thêm timeout cho kết nối
+                    var connectTask = client.ConnectAsync(hostIpAddress, HandshakePort);
+                    if (await Task.WhenAny(connectTask, Task.Delay(5000)) != connectTask)
+                    {
+                        throw new TimeoutException("Connection timed out.");
+                    }
+
                     Debug.WriteLine("[Client] Kết nối TCP thành công!");
 
                     using (NetworkStream stream = client.GetStream())
                     {
-                        string localIp = GetLocalIPAddress();
-                        if (string.IsNullOrEmpty(localIp))
+                        // SỬA ĐỔI: Gửi yêu cầu kết nối thay vì gửi IP
+                        string displayName = Environment.MachineName; // Gửi tên máy
+                        string request = $"CONNECT:{displayName}";
+                        byte[] requestBytes = Encoding.UTF8.GetBytes(request);
+                        await stream.WriteAsync(requestBytes, 0, requestBytes.Length);
+                        Debug.WriteLine($"[Client] Gửi yêu cầu: {request}");
+
+                        // SỬA ĐỔI: Chờ phản hồi từ Host
+                        byte[] buffer = new byte[1024];
+
+                        // Thêm timeout 30 giây chờ Host chấp nhận
+                        var readTask = stream.ReadAsync(buffer, 0, buffer.Length);
+                        if (await Task.WhenAny(readTask, Task.Delay(30000)) != readTask)
                         {
-                            Debug.WriteLine("[Client] Lỗi: Không thể lấy địa chỉ IP cục bộ.");
-                            return false;
+                            throw new TimeoutException("Host did not respond in time.");
                         }
 
-                        Debug.WriteLine($"[Client] Gửi địa chỉ IP cục bộ ({localIp}) đến Host...");
-                        byte[] ipBytes = Encoding.UTF8.GetBytes(localIp);
-                        await stream.WriteAsync(ipBytes, 0, ipBytes.Length);
-                        Debug.WriteLine("[Client] Gửi IP thành công.");
+                        int bytesRead = await readTask;
+                        string response = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                        Debug.WriteLine($"[Client] Nhận phản hồi từ Host: {response}");
+
+                        return response == "ACCEPT";
                     }
                 }
-                return true;
             }
             catch (Exception ex)
             {

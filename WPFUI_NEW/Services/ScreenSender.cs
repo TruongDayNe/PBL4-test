@@ -49,6 +49,19 @@ namespace WPFUI_NEW.Services
             Debug.WriteLine($"[ScreenSender] Đã thêm client: {clientEndPoint}. Tổng số: {ClientCount}");
         }
 
+        // THÊM HÀM MỚI NÀY:
+        public void RemoveClient(IPEndPoint clientEndPoint)
+        {
+            // ConcurrentBag không có hàm Remove trực tiếp, chúng ta phải tạo lại list
+            var currentClients = _clients.ToList();
+            if (currentClients.Remove(clientEndPoint))
+            {
+                // Tạo lại ConcurrentBag từ danh sách đã cập nhật
+                _clients = new ConcurrentBag<IPEndPoint>(currentClients);
+                Debug.WriteLine($"[ScreenSender] Đã xóa client: {clientEndPoint}. Còn lại: {ClientCount}");
+            }
+        }
+
         private async Task SendToAllClientsAsync(UdpPacket packet)
         {
             if (_clients.IsEmpty) return;

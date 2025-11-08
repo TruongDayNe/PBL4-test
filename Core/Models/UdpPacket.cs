@@ -81,6 +81,9 @@ namespace RealTimeUdpStream.Core.Models
     {
         Input = 0x01, Ping = 0x02, Report = 0x20,
         Video = 0x10, Audio = 0x11, Pong = 0x12, Control = 0x13, Fec = 0x14, Screen = 0x15, Keyboard = 0x16, ViGEm = 0x17
+
+        Disconnect = 0x18, // Client tự ngắt kết nối
+        Kick = 0x19        // Host đuổi Client
     }
 
     [Flags]

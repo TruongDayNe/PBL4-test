@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System;
+using Core.Networking; 
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows; // Cần cho Application.Current.Dispatcher
@@ -20,13 +21,15 @@ namespace WPFUI_NEW.ViewModels
         private bool _isConnecting = false;
 
         // 1. SỬA ĐỔI: Thêm một trường (field) để lưu trữ hành động điều hướng
-        private readonly Action _onHostAcceptedCallback;
+        private readonly Action<string> _onHostAcceptedCallback;
+        private readonly NetworkService _networkService;
 
         // 2. SỬA ĐỔI: Constructor (Hàm khởi tạo)
         // Nhận một hành động (Action) từ MainViewModel
-        public ClientConnectViewModel(Action onHostAcceptedCallback)
+        public ClientConnectViewModel(Action<string> onHostAcceptedCallback)
         {
             _onHostAcceptedCallback = onHostAcceptedCallback;
+            _networkService = new NetworkService(); // Khởi tạo service
         }
 
         private bool CanConnect()
@@ -43,20 +46,17 @@ namespace WPFUI_NEW.ViewModels
 
             try
             {
-                // --- GIẢ LẬP MẠNG (Xóa khi làm thật) ---
-                await Task.Delay(3000); // Giả lập đang kết nối...
 
                 // TODO: Gọi service mạng để kết nối TCP (handshake)
-                bool success = true; // Giả lập kết nối thành công
+                bool success = await _networkService.ConnectToHostAsync(HostIpAddress);
 
                 if (success)
                 {
-                    StatusText = "Kết nối thành công! Đang chờ Host chấp nhận...";
-                    Debug.WriteLine("[Client] Đã gửi yêu cầu, đang chờ Host...");
+                    StatusText = "Host đã chấp nhận! Đang vào stream...";
+                    Debug.WriteLine("[Client] Host đã chấp nhận!");
 
-                    // --- GIẢ LẬP HOST CHẤP NHẬN (Xóa khi làm thật) ---
-                    await Task.Delay(2000);
-                    OnHostAccepted(); // Gọi hàm điều hướng
+                    await Task.Delay(1000);
+                    OnHostAccepted(HostIpAddress); // Gọi hàm điều hướng
                 }
                 else
                 {
@@ -73,7 +73,7 @@ namespace WPFUI_NEW.ViewModels
         }
 
         // 3. SỬA ĐỔI: Hàm này sẽ được gọi khi service mạng báo Host đã chấp nhận
-        private void OnHostAccepted()
+        private void OnHostAccepted(string hostIp)
         {
             // Phải chạy trên luồng UI chính
             Application.Current.Dispatcher.Invoke(() =>
@@ -82,16 +82,7 @@ namespace WPFUI_NEW.ViewModels
                 Debug.WriteLine("[Client] Host đã chấp nhận!");
 
                 // GỌI HÀNH ĐỘNG ĐỂ ĐIỀU HƯỚNG
-                _onHostAcceptedCallback?.Invoke();
-            });
-        }
-
-        private void OnHostRejected()
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                StatusText = "Host đã từ chối kết nối của bạn.";
-                IsConnecting = false;
+                _onHostAcceptedCallback?.Invoke(hostIp);
             });
         }
 

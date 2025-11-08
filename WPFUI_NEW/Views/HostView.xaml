@@ -1,42 +1,290 @@
 ﻿<UserControl x:Class="WPFUI_NEW.Views.HostView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:WPFUI_NEW.Views"
-             xmlns:vm="clr-namespace:WPFUI_NEW.ViewModels"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             xmlns:vm="clr-namespace:WPFUI_NEW.ViewModels"
+             d:DesignHeight="720" d:DesignWidth="1080"
+             d:DataContext="{d:DesignInstance vm:HostViewModel, IsDesignTimeCreatable=True}"
+             Background="#FF1E1E1E" Foreground="#FFE0E0E0">
 
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="AccentColor" Color="#FF007FFF"/>
+        <SolidColorBrush x:Key="DestructiveColor" Color="#FFD9534F"/>
+        <SolidColorBrush x:Key="AcceptColor" Color="#FF28A745"/>
+        <SolidColorBrush x:Key="BackgroundColor" Color="#FF1E1E1E"/>
+        <SolidColorBrush x:Key="PanelColor" Color="#FF2D2D2D"/>
+        <SolidColorBrush x:Key="BorderColor" Color="#FF3F3F3F"/>
+        <SolidColorBrush x:Key="TextPrimaryColor" Color="#FFE0E0E0"/>
+        <SolidColorBrush x:Key="TextSecondaryColor" Color="#FFAAAAAA"/>
 
+        <Style x:Key="ModernButton" TargetType="Button">
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="4"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Opacity" Value="0.7"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+        <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
+            <Setter Property="Background" Value="{StaticResource AccentColor}"/>
+        </Style>
 
-        <StackPanel Grid.Row="0" Margin="10">
-            <Button Padding="10" 
-                    Margin="0"
-                    HorizontalAlignment="Stretch" FontSize="16"
-                    FontWeight="SemiBold"
-                    Content="{Binding StreamButtonContent}" 
-                    Command="{Binding StartStreamCommand}" />
+        <Style x:Key="DestructiveButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
+            <Setter Property="Background" Value="{StaticResource DestructiveColor}"/>
+        </Style>
 
-            <TextBlock Text="{Binding StatusText}" 
-                       HorizontalAlignment="Center" 
-                       Margin="0,8,0,0" 
-                       FontSize="14"
-                       Opacity="0.8"/>
-        </StackPanel>
+        <Style x:Key="AcceptButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
+            <Setter Property="Background" Value="{StaticResource AcceptColor}"/>
+        </Style>
 
-        <Border Grid.Row="1" 
-                Margin="10,0,10,10" BorderBrush="Gray" 
-                BorderThickness="1" 
-                Background="Black">
-            <Image Source="{Binding PreviewImage}" Stretch="Uniform" />
+        <Style x:Key="IconButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryColor}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="16">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FF444444"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryColor}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FF555555"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-        </Border>
+        <Style x:Key="AcceptIconButton" TargetType="Button" BasedOn="{StaticResource IconButton}">
+            <Setter Property="Foreground" Value="{StaticResource AcceptColor}"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#3328A745"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="RejectIconButton" TargetType="Button" BasedOn="{StaticResource IconButton}">
+            <Setter Property="Foreground" Value="{StaticResource DestructiveColor}"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#33D9534F"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="CardBorder" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource PanelColor}"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="20"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect ShadowDepth="2" Color="#000000" Opacity="0.3" BlurRadius="10"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CardHeader" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryColor}"/>
+            <Setter Property="Margin" Value="0,0,0,15"/>
+        </Style>
+
+        <Style x:Key="CardListBox" TargetType="ListBox">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+        </Style>
+
+        <Style TargetType="ListBoxItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <ContentPresenter/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="20">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="1*"/>
+        </Grid.ColumnDefinitions>
+
+        <Grid Grid.Column="0" Margin="0,0,20,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Style="{StaticResource CardBorder}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <TextBlock Text="MÃ KẾT NỐI (IP CỦA BẠN)" FontSize="14" Foreground="{StaticResource TextSecondaryColor}" FontWeight="SemiBold"/>
+                        <Border Background="{StaticResource BackgroundColor}" CornerRadius="4" Padding="12,8" Margin="0,8,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding HostIpAddress}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimaryColor}" VerticalAlignment="Center"/>
+                                <Button Grid.Column="1" Style="{StaticResource IconButton}" Command="{Binding CopyIpCommand}" ToolTip="Copy IP Address" Margin="10,0,0,0">
+                                    <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" FontSize="16"/>
+                                </Button>
+                            </Grid>
+                        </Border>
+                        <TextBlock Text="{Binding StatusText}" HorizontalAlignment="Left" Margin="0,8,0,0" FontSize="14" Opacity="0.8"/>
+                    </StackPanel>
+
+                    <Button Grid.Column="1" 
+                            Content="{Binding StreamButtonContent}" 
+                            FontSize="16" Padding="25,20" 
+                            VerticalAlignment="Stretch" Margin="20,0,0,0"
+                            Style="{StaticResource AccentButton}"
+                            Command="{Binding StartStreamCommand}"/>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="1" Background="Black" CornerRadius="8" Margin="0,20,0,0">
+                <Image Source="{Binding PreviewImage}" Stretch="Uniform" />
+            </Border>
+        </Grid>
+
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Style="{StaticResource CardBorder}" Margin="0,0,0,10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="Yêu cầu chờ duyệt" Style="{StaticResource CardHeader}"/>
+
+                    <ListBox Grid.Row="1" Style="{StaticResource CardListBox}" ItemsSource="{Binding PendingClients}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#333" CornerRadius="4" Padding="12" Margin="0,4">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding DisplayName}" Foreground="{StaticResource TextPrimaryColor}" VerticalAlignment="Center" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+
+                                        <Button Grid.Column="1" Style="{StaticResource AcceptIconButton}" ToolTip="Chấp nhận" Margin="8,0,0,0"
+                                                Command="{Binding DataContext.AcceptClientCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}">
+                                            <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="16"/>
+                                        </Button>
+                                        <Button Grid.Column="2" Style="{StaticResource RejectIconButton}" ToolTip="Từ chối" Margin="5,0,0,0"
+                                                Command="{Binding DataContext.RejectClientCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}">
+                                            <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="16"/>
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="1" Style="{StaticResource CardBorder}" Margin="0,10,0,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="Đã kết nối" Style="{StaticResource CardHeader}"/>
+                    <ListBox Grid.Row="1" Style="{StaticResource CardListBox}" ItemsSource="{Binding ConnectedClients}">
+
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#333" CornerRadius="4" Padding="12" Margin="0,4">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding DisplayName}" 
+                                                       Foreground="{StaticResource TextPrimaryColor}" FontWeight="Bold" FontSize="14"/>
+
+                                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                                <TextBlock Text="{Binding Ping, StringFormat='Ping: {0}ms'}" 
+                                                           Foreground="{StaticResource AcceptColor}" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{Binding PacketLoss, StringFormat='Loss: {0}%'}" 
+                                                           Foreground="{StaticResource DestructiveColor}" FontWeight="SemiBold" Margin="15,0,0,0"/>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <Button Grid.Column="1" 
+                                                Style="{StaticResource RejectIconButton}"
+                                                ToolTip="Kick"
+                                                VerticalAlignment="Center"
+                                                Command="{Binding DataContext.KickClientCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}">
+                                            <TextBlock Text="&#xE77A;" FontFamily="Segoe MDL2 Assets" FontSize="16"/>
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+        </Grid>
     </Grid>
 </UserControl>

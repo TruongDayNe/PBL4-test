@@ -16,9 +16,23 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using WPFUI_NEW.Services;
+using System.Collections.ObjectModel;
+using System.Net.Sockets;
 
 namespace WPFUI_NEW.ViewModels
 {
+    // THÊM: Các class này từ HostPreStreamViewModel
+    public partial class ClientListItemViewModel : ObservableObject
+    {
+        [ObservableProperty] private string _clientIP;
+        [ObservableProperty] private string _displayName;
+    }
+    public partial class ClientRequestViewModel : ClientListItemViewModel { }
+    public partial class ConnectedClientViewModel : ClientListItemViewModel
+    {
+        [ObservableProperty] private int _ping;
+        [ObservableProperty] private double _packetLoss;
+    }
     public partial class HostViewModel : ObservableObject
     {
         private ScreenProcessor _screenProcessor;
@@ -35,13 +49,39 @@ namespace WPFUI_NEW.ViewModels
         [ObservableProperty] private string _streamButtonContent = "Bắt đầu Host";
         [ObservableProperty] private string _statusText = "Sẵn sàng";
 
+        // THÊM: Lấy từ HostPreStreamViewModel
+        [ObservableProperty] private string _hostIpAddress = "Đang lấy IP..."; // Cần hàm lấy IP
+        public ObservableCollection<ClientRequestViewModel> PendingClients { get; }
+        public ObservableCollection<ConnectedClientViewModel> ConnectedClients { get; }
+
+        // THÊM: Commands mới
+        public IAsyncRelayCommand AcceptClientCommand { get; }
+        public IAsyncRelayCommand RejectClientCommand { get; }
+        public IRelayCommand CopyIpCommand { get; }
+        public IAsyncRelayCommand KickClientCommand { get; }
+
         public IAsyncRelayCommand StartStreamCommand { get; }
 
         public HostViewModel()
         {
             _networkService = new NetworkService();
-            _networkService.ClientConnected += OnClientConnected;
+            _networkService.ClientRequestReceived += OnClientRequestReceived;
+            _networkService.ClientAccepted += OnClientAccepted;
+
             StartStreamCommand = new AsyncRelayCommand(ToggleStreamingAsync);
+
+            // THÊM: Khởi tạo từ HostPreStreamViewModel
+            PendingClients = new ObservableCollection<ClientRequestViewModel>();
+            ConnectedClients = new ObservableCollection<ConnectedClientViewModel>();
+
+            AcceptClientCommand = new AsyncRelayCommand<ClientRequestViewModel>(AcceptClientAsync);
+            RejectClientCommand = new AsyncRelayCommand<ClientRequestViewModel>(RejectClientAsync);
+            CopyIpCommand = new RelayCommand(CopyIp);
+
+            KickClientCommand = new AsyncRelayCommand<ConnectedClientViewModel>(KickClientAsync);
+
+            // Thử lấy IP
+            LoadHostIp();
 
             // Initialize non-nullable fields
             _screenProcessor = null!; // Mark as nullable or initialize properly
@@ -52,12 +92,157 @@ namespace WPFUI_NEW.ViewModels
             _keyboardManager = null!; // Mark as nullable or initialize properly
             _vigemManager = null!; // Mark as nullable or initialize properly
         }
+        private void LoadHostIp()
+        {
+            try
+            {
+                var host = Dns.GetHostEntry(Dns.GetHostName());
+                var ip = host.AddressList.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
+                HostIpAddress = ip?.ToString() ?? "Không tìm thấy IP";
+            }
+            catch (Exception ex)
+            {
+                HostIpAddress = "Lỗi lấy IP";
+                Debug.WriteLine($"Lỗi lấy IP: {ex.Message}");
+            }
+        }
+
+        private void CopyIp()
+        {
+            try
+            {
+                Clipboard.SetText(HostIpAddress);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Lỗi copy IP: {ex.Message}");
+            }
+        }
+
+        // THÊM: Hàm xử lý Accept
+        private async Task AcceptClientAsync(ClientRequestViewModel client)
+        {
+            if (client == null) return;
+
+            try
+            {
+                // BƯỚC 1: CẬP NHẬT UI TRƯỚC
+                // Di chuyển client từ 'Chờ' sang 'Đã kết nối' ngay lập tức
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    PendingClients.Remove(client);
+
+                    var newConnectedClient = new ConnectedClientViewModel
+                    {
+                        ClientIP = client.ClientIP,
+                        DisplayName = client.DisplayName,
+                        Ping = 0,
+                        PacketLoss = 0
+                    };
+                    ConnectedClients.Add(newConnectedClient);
+                    UpdateStatusText();
+                });
+
+                // BƯỚC 2: BÁO CHO NETWORK SERVICE GỬI "ACCEPT"
+                // Việc này sẽ kích hoạt sự kiện OnClientAccepted (để bắt đầu stream),
+                // nhưng bây giờ Client đã nằm trong danh sách ConnectedClients.
+                await _networkService.AcceptClientAsync(client.ClientIP);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Lỗi khi chấp nhận client {client.ClientIP}: {ex.Message}");
+                MessageBox.Show($"Lỗi khi chấp nhận client: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+
+                // Rollback (Khôi phục): Nếu có lỗi, xóa client khỏi danh sách kết nối
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    var clientToRemove = ConnectedClients.FirstOrDefault(c => c.ClientIP == client.ClientIP);
+                    if (clientToRemove != null)
+                    {
+                        ConnectedClients.Remove(clientToRemove);
+                    }
+                    // (Chúng ta không cần thêm lại vào Pending, Client có thể thử kết nối lại)
+                    UpdateStatusText();
+                });
+            }
+        }
+
+        // THÊM: Hàm xử lý Reject
+        private async Task RejectClientAsync(ClientRequestViewModel client)
+        {
+            if (client == null) return;
+
+            try
+            {
+                await _networkService.RejectClientAsync(client.ClientIP);
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    PendingClients.Remove(client);
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Lỗi khi từ chối client {client.ClientIP}: {ex.Message}");
+            }
+        }
+
+        // HÀM MỚI: Xử lý khi có client chờ
+        private void OnClientRequestReceived(string clientIp, string displayName)
+        {
+            Debug.WriteLine($"[HostViewModel] Nhận yêu cầu từ {clientIp}");
+            // Cần chạy trên luồng UI
+            App.Current.Dispatcher.Invoke(() =>
+            {
+                // Kiểm tra trùng lặp
+                if (!PendingClients.Any(c => c.ClientIP == clientIp) && !ConnectedClients.Any(c => c.ClientIP == clientIp))
+                {
+                    PendingClients.Add(new ClientRequestViewModel
+                    {
+                        ClientIP = clientIp,
+                        DisplayName = $"{displayName} ({clientIp})"
+                    });
+                }
+            });
+        }
+
+        // THÊM HÀM MỚI: Xử lý packet "Disconnect"
+        private void HandleControlPacket(UdpPacket packet)
+        {
+            if (packet.Header.PacketType == (byte)UdpPacketType.Disconnect)
+            {
+                string clientIp = packet.Source.Address.ToString();
+                Debug.WriteLine($"[Host] Received DISCONNECT from {clientIp}");
+
+                // Phải chạy trên luồng UI
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    var clientToRemove = ConnectedClients.FirstOrDefault(c => c.ClientIP == clientIp);
+                    if (clientToRemove != null)
+                    {
+                        ConnectedClients.Remove(clientToRemove);
+
+                        // Cũng phải xóa khỏi ScreenSender
+                        var clientEndPoint = new IPEndPoint(packet.Source.Address, 12001); // 12001 là port Client
+                        _screenSender?.RemoveClient(clientEndPoint);
+
+                        UpdateStatusText();
+                        Debug.WriteLine($"[Host] Client {clientIp} removed from list.");
+                    }
+                });
+            }
+            // (Bạn có thể thêm case UdpPacketType.Kick ở đây nếu Client gửi trả)
+        }
 
         private async Task ToggleStreamingAsync()
         {
             if (_screenSender != null)
             {
                 // --- LOGIC DỪNG STREAM ---
+                if (_sharedUdpPeer != null)
+                {
+                    _sharedUdpPeer.OnPacketReceived -= HandleControlPacket;
+                }
+
                 _cancellationTokenSource?.Cancel();
                 _networkService.StopListening();
                 Debug.WriteLine("[Host] Đã yêu cầu dừng stream/chờ...");
@@ -95,6 +280,10 @@ namespace WPFUI_NEW.ViewModels
                 PreviewImage = null;
                 StatusText = "Đã dừng. 0 client(s).";
                 _cancellationTokenSource = null;
+
+                // Xóa danh sách
+                PendingClients.Clear();
+                ConnectedClients.Clear();
             }
             else
             {
@@ -105,7 +294,8 @@ namespace WPFUI_NEW.ViewModels
                     const int SERVER_PORT = 12000;
 
                     _sharedUdpPeer = new UdpPeer(SERVER_PORT); // Tạo UdpPeer
-                    
+                    _sharedUdpPeer.OnPacketReceived += HandleControlPacket;
+
                     // BAT DAU LANG NGHE UDP - QUAN TRONG!
                     _ = Task.Run(() => _sharedUdpPeer.StartReceivingAsync(), _cancellationTokenSource.Token);
                     Console.WriteLine("[HOST] UdpPeer bat dau lang nghe tren port 12000");
@@ -174,7 +364,7 @@ namespace WPFUI_NEW.ViewModels
             }
         }
 
-        private void OnClientConnected(string clientIp)
+        private void OnClientAccepted(string clientIp)
         {
             string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "audio_debug.log");
             File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] 🔗 OnClientConnected: ClientIP={clientIp}, _audioManager={(_audioManager == null ? "NULL" : "SET")}{Environment.NewLine}");
@@ -212,6 +402,12 @@ namespace WPFUI_NEW.ViewModels
             {
                 Debug.WriteLine($"[Host] Lỗi khi thêm client {clientIp}: {ex.Message}");
             }
+        }
+
+        // THÊM: Hàm helper cập nhật StatusText
+        private void UpdateStatusText()
+        {
+            StatusText = $"Đang stream... ({ConnectedClients.Count} client(s) connected)";
         }
 
         private void HandleFrameCaptured(Image frame)
@@ -287,6 +483,51 @@ namespace WPFUI_NEW.ViewModels
                     // Luôn mở khóa bits
                     bitmap?.UnlockBits(bitmapData);
                 }
+            }
+        }
+
+        private async Task KickClientAsync(ConnectedClientViewModel client)
+        {
+            if (client == null) return;
+
+            // Hiển thị hộp thoại xác nhận
+            var result = MessageBox.Show($"Bạn có chắc muốn đuổi (kick) client: {client.DisplayName}?",
+                                         "Xác nhận Kick",
+                                         MessageBoxButton.YesNo,
+                                         MessageBoxImage.Warning);
+
+            if (result == MessageBoxResult.No) return;
+
+            Debug.WriteLine($"[Host] Đang kick client: {client.ClientIP}");
+
+            // TODO: Gửi tin nhắn "KICK" qua mạng
+            // (Chúng ta sẽ làm việc này ở Bước 1 - Thêm tính năng "Kick" như đã bàn)
+
+            // Tạm thời chỉ xóa khỏi danh sách
+            try
+            {
+                // BƯỚC 1: Lấy thông tin client
+                var clientIp = IPAddress.Parse(client.ClientIP);
+                var clientEndPoint = new IPEndPoint(clientIp, 12001); // 12001 là port Client lắng nghe
+
+                // BƯỚC 2: Ngừng gửi stream cho client
+                _screenSender?.RemoveClient(clientEndPoint);
+
+                // BƯỚC 3: Gửi tin nhắn "Kick" qua mạng
+                var kickPacket = new UdpPacket(UdpPacketType.Kick, 0);
+                await _sharedUdpPeer.SendToAsync(kickPacket, clientEndPoint);
+
+                // BƯỚC 4: Xóa khỏi giao diện UI
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    ConnectedClients.Remove(client);
+                    UpdateStatusText();
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[Host] Lỗi khi Kick: {ex.Message}");
+                MessageBox.Show($"Lỗi khi kick client: {ex.Message}");
             }
         }
 

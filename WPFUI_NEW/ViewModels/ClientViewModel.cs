@@ -36,6 +36,8 @@ namespace WPFUI_NEW.ViewModels
         // --- Thuộc tính cho UI ---
         [ObservableProperty] private BitmapSource _receivedImage;
         [ObservableProperty] private string _connectButtonContent = "Kết nối";
+
+
         [ObservableProperty] private string _hostIpAddress = "127.0.0.1"; // IP Host cần nhập
         [ObservableProperty] private int clientPort = 12001; // Replace _clientPort with generated property
 
@@ -61,12 +63,50 @@ namespace WPFUI_NEW.ViewModels
             };
             _telemetryTimer.Tick += OnTelemetryTick;
         }
+        private void HandleControlPacket(UdpPacket packet)
+        {
+            if (packet.Header.PacketType == (byte)UdpPacketType.Kick)
+            {
+                Debug.WriteLine($"[Client] Received KICK from Host!");
+
+                // Chạy trên luồng UI
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show("Bạn đã bị Host ngắt kết nối.", "Bị Kick", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    // Gọi hàm ngắt kết nối
+                    // (Chúng ta không cần await, chỉ cần nó chạy)
+                    _ = ToggleConnectionAsync();
+                });
+            }
+        }
 
         private async Task ToggleConnectionAsync()
         {
             if (_screenReceiver != null)
             {
-                // Disconnect logic
+
+                if (_sharedUdpPeer != null && _hostEndPoint != null)
+                {
+                    try
+                    {
+                        Debug.WriteLine($"[Client] Sending DISCONNECT to {_hostEndPoint}");
+                        var disconnectPacket = new UdpPacket(UdpPacketType.Disconnect, 0);
+                        await _sharedUdpPeer.SendToAsync(disconnectPacket, _hostEndPoint);
+                        Debug.WriteLine($"[Client] DISCONNECT sent.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[Client] Error sending DISCONNECT: {ex.Message}");
+                    }
+                }
+
+                if (_sharedUdpPeer != null)
+                {
+                    _sharedUdpPeer.OnPacketReceived -= HandleControlPacket;
+                }
+
+                // --- DISCONNECT LOGIC (Giữ nguyên) ---
                 _telemetryTimer.Stop();
                 _audioManager?.StopAudioReceiving();
                 _audioManager?.Dispose();
@@ -74,7 +114,7 @@ namespace WPFUI_NEW.ViewModels
                 _keyboardManager?.StopCapture();
                 _keyboardManager?.Dispose();
                 _keyboardManager = null;
-                _vigemManager?.StopCapture(); // Stop ViGEm capture
+                _vigemManager?.StopCapture();
                 _vigemManager?.Dispose();
                 _vigemManager = null;
                 _screenReceiver?.Stop();
@@ -91,20 +131,23 @@ namespace WPFUI_NEW.ViewModels
             }
             else
             {
-                // Connect logic
-                ConnectButtonContent = "Đang kết nối...";
-                bool tcpSuccess = await _networkService.ConnectToHostAsync(HostIpAddress);
-                if (tcpSuccess)
+                // --- CONNECT LOGIC (Đã sửa) ---
+                // Việc handshake TCP đã được ClientConnectViewModel thực hiện.
+                // Hàm này giờ chỉ để BẮT ĐẦU STREAM UDP.
+                try
                 {
-                    _sharedUdpPeer = new UdpPeer(ClientPort); // Use generated property
+                    ConnectButtonContent = "Đang kết nối (UDP)...";
+
+                    _sharedUdpPeer = new UdpPeer(ClientPort);
+
+                    _sharedUdpPeer.OnPacketReceived += HandleControlPacket;
+
                     _screenReceiver = new ScreenReceiver(_sharedUdpPeer);
                     _screenReceiver.OnFrameReady += HandleFrameReady;
-                    
-                    // TẮT DELAY TẠM THỜI ĐỂ TEST
+
                     _audioManager = new AudioManager(_sharedUdpPeer, AudioConfig.CreateDefault(), isClientMode: false);
                     _audioManager.StartAudioReceiving();
-                    
-                    // CLIENT mode = FALSE = CAPTURE (gửi phím cho HOST)
+
                     // Lấy HOST endpoint để gửi phím
                     var hostEndPoint = new System.Net.IPEndPoint(System.Net.IPAddress.Parse(HostIpAddress), 12000);
                     _hostEndPoint = hostEndPoint;
@@ -112,23 +155,27 @@ namespace WPFUI_NEW.ViewModels
                     // Keyboard Manager - WASD keys
                     _keyboardManager = new KeyboardManager(_sharedUdpPeer, isClientMode: false);
                     _keyboardManager.SetTargetEndPoint(hostEndPoint);
-                    _keyboardManager.StartCapture(); // CLIENT CAPTURE phím WASD và GỬI cho HOST
+                    _keyboardManager.StartCapture();
                     Console.WriteLine("[CLIENT] KeyboardManager CAPTURE started - gui phim WASD cho HOST");
                     Debug.WriteLine("[Client] KeyboardManager CAPTURE started - se gui phim WASD cho HOST.");
-                    
+
                     // ViGEm Manager - IJKL keys for controller
-                    _vigemManager = new ViGEmManager(_sharedUdpPeer, isClientMode: true); // CLIENT = true = CAPTURE
+                    _vigemManager = new ViGEmManager(_sharedUdpPeer, isClientMode: true);
                     _vigemManager.SetTargetEndPoint(hostEndPoint);
-                    _vigemManager.StartCapture(); // CLIENT CAPTURE phím IJKL và GỬI cho HOST
+                    _vigemManager.StartCapture();
                     Console.WriteLine("[CLIENT] ViGEmManager CAPTURE started - gui phim IJKL cho HOST");
                     Debug.WriteLine("[Client] ViGEmManager CAPTURE started - se gui phim IJKL cho HOST.");
-                    
+
                     ConnectButtonContent = "Ngắt kết nối";
                     _telemetryTimer.Start();
+
+                    // Cần return Task.CompletedTask vì hàm là async
+                    await Task.CompletedTask;
                 }
-                else
+                catch (Exception ex)
                 {
-                    MessageBox.Show($"Không thể kết nối TCP đến Host tại {HostIpAddress}:{NetworkService.HandshakePort}.", "Lỗi Kết Nối TCP", MessageBoxButton.OK, MessageBoxImage.Error);
+                    // Lỗi này là lỗi khi BẮT ĐẦU UDP (ví dụ: port 12001 đã dùng)
+                    MessageBox.Show($"Lỗi khi bắt đầu lắng nghe (UDP): {ex.Message}", "Lỗi UDP", MessageBoxButton.OK, MessageBoxImage.Error);
                     ConnectButtonContent = "Kết nối";
                 }
             }
@@ -173,6 +220,13 @@ namespace WPFUI_NEW.ViewModels
             {
                 ToggleConnectionAsync().Wait(); // Chờ
             }
+
+            // THÊM: Đảm bảo hủy đăng ký nếu chưa
+            if (_sharedUdpPeer != null)
+            {
+                _sharedUdpPeer.OnPacketReceived -= HandleControlPacket;
+            }
+
         }
     }
 }
