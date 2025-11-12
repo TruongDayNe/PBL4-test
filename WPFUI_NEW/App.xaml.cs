@@ -1,7 +1,11 @@
-﻿using System.Configuration;
+﻿using Downloaders.Enums;
+using FFMpegCore;
+using System.Configuration;
 using System.Data;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
+using WPFUI_NEW.Downloaders;
 
 namespace WPFUI_NEW
 {
@@ -16,8 +20,29 @@ namespace WPFUI_NEW
         [DllImport("kernel32.dll")]
         private static extern bool FreeConsole();
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e)
         {
+            // Cấu hình thư mục chứa file binary FFmpeg
+            // Bạn có thể đặt ở bất kỳ đâu, ví dụ: thư mục gốc của ứng dụng
+            var binaryFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "FFBinaries");
+            if (!Directory.Exists(binaryFolder))
+            {
+                Directory.CreateDirectory(binaryFolder);
+            }
+
+            // Cấu hình GlobalFFOptions để FFMpegCore biết tìm file ở đâu
+            //
+            GlobalFFOptions.Configure(options =>
+            {
+                options.BinaryFolder = binaryFolder;
+            });
+
+            // Tải về các file binary nếu chúng chưa tồn tại
+            //
+            await FFMpegDownloader.DownloadBinaries(
+                binaries: FFMpegBinaries.FFMpeg | FFMpegBinaries.FFProbe,
+                options: GlobalFFOptions.Current
+            );
             base.OnStartup(e);
             
             // Tạo console window để xem debug logs

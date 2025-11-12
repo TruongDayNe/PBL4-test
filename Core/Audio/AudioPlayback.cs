@@ -35,8 +35,8 @@ namespace RealTimeUdpStream.Core.Audio
         }
 
         // Buffer management - OPTIMIZED for UDP streaming with jitter tolerance
-        private const int MAX_BUFFER_DURATION_MS = 3000; // 3 seconds maximum buffer
-        private const int MIN_BUFFER_DURATION_MS = 500;  // 500ms minimum before starting playback (higher for stability)
+        private const int MAX_BUFFER_DURATION_MS = 5000; // 3 seconds maximum buffer
+        private const int MIN_BUFFER_DURATION_MS = 2000;  // 500ms minimum before starting playback (higher for stability)
 
         // Delay data structure
         private class DelayedAudioData

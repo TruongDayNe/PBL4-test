@@ -123,7 +123,7 @@ namespace WPFUI_NEW.ViewModels
                     // HOST mode: không delay, phát ngay
                     _audioManager = new AudioManager(_sharedUdpPeer, AudioConfig.CreateDefault(), isClientMode: false);
 
-                    _audioManager.StartAudioStreaming(AudioInputType.SystemAudio); // Bắt đầu ghi âm system
+                    _audioManager.StartAudioStreaming(AudioInputType.SystemAudio); // Bắt đầu ghi âm system`
                     //_audioManager.StartAudioStreaming(AudioInputType.Microphone); // Bắt đầu ghi âm mic
 
                     Debug.WriteLine("[Host] AudioManager created and started.");

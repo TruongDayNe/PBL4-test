@@ -44,7 +44,7 @@ namespace WPFUI_NEW.ViewModels
             try
             {
                 // --- GIẢ LẬP MẠNG (Xóa khi làm thật) ---
-                await Task.Delay(3000); // Giả lập đang kết nối...
+                await Task.Delay(1500); // Giả lập đang kết nối...
 
                 // TODO: Gọi service mạng để kết nối TCP (handshake)
                 bool success = true; // Giả lập kết nối thành công
@@ -55,7 +55,7 @@ namespace WPFUI_NEW.ViewModels
                     Debug.WriteLine("[Client] Đã gửi yêu cầu, đang chờ Host...");
 
                     // --- GIẢ LẬP HOST CHẤP NHẬN (Xóa khi làm thật) ---
-                    await Task.Delay(2000);
+                    await Task.Delay(1000);
                     OnHostAccepted(); // Gọi hàm điều hướng
                 }
                 else
