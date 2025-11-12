@@ -2,6 +2,8 @@
 using SharpDX;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
+using Device = SharpDX.Direct3D11.Device;
+using MapFlags = SharpDX.Direct3D11.MapFlags;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -95,9 +97,9 @@ namespace Core.Streaming
             // Định dạng phổ biến nhất khi chụp màn hình là B8G8R8A8_UNorm
             switch (fmt)
             {
-                case Format.B8G8R8A8_UNorm:
+                case SharpDX.DXGI.Format.B8G8R8A8_UNorm:
                     return "bgra";
-                case Format.R8G8B8A8_UNorm:
+                case SharpDX.DXGI.Format.R8G8B8A8_UNorm:
                     return "rgba";
                 // Thêm các định dạng khác nếu bạn cần
                 default:
