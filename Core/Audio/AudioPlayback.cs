@@ -27,6 +27,9 @@ namespace RealTimeUdpStream.Core.Audio
         private bool _disposed = false;
         private bool _isPlaying = false;
         
+        // Opus decoder (nullable - only used if codec is OPUS)
+        private OpusDecoder _opusDecoder;
+        
         private static string _logFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "audio_debug.log");
         
         private void LogToFile(string message)
@@ -34,9 +37,9 @@ namespace RealTimeUdpStream.Core.Audio
             Debug.WriteLine($"[AudioPlayback] {message}");
         }
 
-        // Buffer management - OPTIMIZED for UDP streaming with jitter tolerance
-        private const int MAX_BUFFER_DURATION_MS = 3000; // 3 seconds maximum buffer
-        private const int MIN_BUFFER_DURATION_MS = 500;  // 500ms minimum before starting playback (higher for stability)
+        // Buffer management - HIGH BUFFERING for maximum stability (trades latency for smoothness)
+        private const int MAX_BUFFER_DURATION_MS = 5000; // 5 seconds maximum buffer
+        private const int MIN_BUFFER_DURATION_MS = 5000; // 5 seconds minimum before starting playback (high stability)
 
         // Delay data structure
         private class DelayedAudioData
@@ -52,6 +55,16 @@ namespace RealTimeUdpStream.Core.Audio
             _delayDurationMs = delayMs;
             _audioQueue = new ConcurrentQueue<AudioPacket>();
             _delayQueue = new ConcurrentQueue<DelayedAudioData>();
+
+            // Initialize Opus decoder if needed
+            if (_config.Codec == AudioCodec.OPUS)
+            {
+                _opusDecoder = new OpusDecoder(
+                    sampleRate: _config.SampleRate,
+                    channels: _config.Channels
+                );
+                Debug.WriteLine($"✓ Opus decoder initialized: {_config.SampleRate}Hz, {_config.Channels}ch");
+            }
 
             InitializePlayback();
 
@@ -85,8 +98,8 @@ namespace RealTimeUdpStream.Core.Audio
 
             _waveOut = new WaveOutEvent
             {
-                DesiredLatency = 500, // INCREASED: 500ms latency for smoother UDP streaming
-                NumberOfBuffers = 3   // Use 3 buffers for better stability
+                DesiredLatency = 800, // HIGH: 800ms latency for maximum smoothness
+                NumberOfBuffers = 4   // Use 4 buffers for best stability
             };
 
             _waveOut.Init(_waveProvider);
@@ -165,15 +178,43 @@ namespace RealTimeUdpStream.Core.Audio
                     var audioData = packet.AudioData;
                     if (audioData.Count > 0)
                     {
+                        byte[] pcmData = null;
+                        
+                        // Decode Opus if needed
+                        if (packet.Header.Codec == AudioCodec.OPUS && _opusDecoder != null)
+                        {
+                            try
+                            {
+                                // Extract Opus data from packet
+                                byte[] opusData = new byte[audioData.Count];
+                                Buffer.BlockCopy(audioData.Array, audioData.Offset, opusData, 0, audioData.Count);
+                                
+                                // Decode to PCM
+                                pcmData = _opusDecoder.Decode(opusData);
+                                // Debug.WriteLine($"🎵 Opus decoded: {opusData.Length} → {pcmData.Length} bytes");
+                            }
+                            catch (Exception decEx)
+                            {
+                                Debug.WriteLine($"❌ Opus decoding failed: {decEx.Message}");
+                                return; // Skip this packet if decode fails
+                            }
+                        }
+                        else
+                        {
+                            // PCM data - use directly
+                            pcmData = new byte[audioData.Count];
+                            Buffer.BlockCopy(audioData.Array, audioData.Offset, pcmData, 0, audioData.Count);
+                        }
+                        
+                        if (pcmData == null || pcmData.Length == 0)
+                            return;
+                        
                         if (_enableDelay)
                         {
                             // CLIENT mode: Th�m v�o delay queue
-                            byte[] delayedData = new byte[audioData.Count];
-                            Buffer.BlockCopy(audioData.Array, audioData.Offset, delayedData, 0, audioData.Count);
-                            
                             var delayedItem = new DelayedAudioData
                             {
-                                Data = delayedData,
+                                Data = pcmData,
                                 PlayAtTicks = DateTime.UtcNow.Ticks + (_delayDurationMs * TimeSpan.TicksPerMillisecond)
                             };
                             
@@ -189,7 +230,7 @@ namespace RealTimeUdpStream.Core.Audio
                         else
                         {
                             // HOST mode: Ph�t ngay kh�ng delay
-                            _waveProvider.AddSamples(audioData.Array, audioData.Offset, audioData.Count);
+                            _waveProvider.AddSamples(pcmData, 0, pcmData.Length);
                             
                             if (DateTime.UtcNow.Ticks % 1000000 == 0) // Log th?nh tho?ng
                             {
@@ -343,6 +384,7 @@ namespace RealTimeUdpStream.Core.Audio
 
             _waveOut?.Dispose();
             _waveProvider = null;
+            _opusDecoder?.Dispose();
 
             _disposed = true;
             Debug.WriteLine("AudioPlayback disposed");

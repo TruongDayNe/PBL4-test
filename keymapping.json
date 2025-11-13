@@ -1,0 +1,48 @@
+{
+  "KeyboardMapping": {
+    "W": "Z",
+    "A": "F",
+    "S": "G",
+    "D": "H"
+  },
+  "ControllerMapping": {
+    "I": {
+      "Type": "LeftStickUp",
+      "Value": 1.0
+    },
+    "J": {
+      "Type": "LeftStickLeft",
+      "Value": 1.0
+    },
+    "K": {
+      "Type": "LeftStickDown",
+      "Value": 1.0
+    },
+    "L": {
+      "Type": "LeftStickRight",
+      "Value": 1.0
+    },
+    "O": {
+      "Type": "ButtonA",
+      "Value": 1.0
+    },
+    "P": {
+      "Type": "ButtonB",
+      "Value": 1.0
+    },
+    "U": {
+      "Type": "ButtonX",
+      "Value": 1.0
+    },
+    "Y": {
+      "Type": "ButtonY",
+      "Value": 1.0
+    }
+  },
+  "AudioSettings": {
+    "Codec": "OPUS",
+    "Bitrate": 96000,
+    "SampleRate": 48000,
+    "Channels": 2
+  }
+}

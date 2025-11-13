@@ -132,6 +132,7 @@ namespace RealTimeUdpStream.Core.Input
         A = 0x41,
         S = 0x53,
         D = 0x44,
+        Z = 0x5A,
         Space = 0x20,
         Shift = 0x10,
         Ctrl = 0x11,

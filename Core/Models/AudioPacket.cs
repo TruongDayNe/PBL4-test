@@ -124,6 +124,10 @@ namespace RealTimeUdpStream.Core.Models
         public AudioCodec Codec { get; set; } = AudioCodec.PCM16;
         public int BufferSize { get; set; } = 1024;   // Samples per buffer
 
+        // Opus-specific settings
+        public int OpusBitrate { get; set; } = 96000; // 96 Kbps (default cho high quality stereo)
+        public int OpusComplexity { get; set; } = 10; // 0-10, 10 = best quality
+
         /// <summary>
         /// Tính kích thước buffer theo bytes
         /// </summary>
@@ -135,7 +139,7 @@ namespace RealTimeUdpStream.Core.Models
         public double BufferDurationMs => (double)BufferSize / SampleRate * 1000;
 
         /// <summary>
-        /// Tạo cấu hình mặc định cho audio streaming
+        /// Tạo cấu hình mặc định cho audio streaming (PCM16)
         /// </summary>
         public static AudioConfig CreateDefault()
         {
@@ -146,6 +150,23 @@ namespace RealTimeUdpStream.Core.Models
                 BitsPerSample = 16,
                 Codec = AudioCodec.PCM16,
                 BufferSize = 1024
+            };
+        }
+
+        /// <summary>
+        /// Tạo cấu hình cho Opus codec (high quality, low bandwidth)
+        /// </summary>
+        public static AudioConfig CreateOpusConfig(int bitrate = 96000)
+        {
+            return new AudioConfig
+            {
+                SampleRate = 48000, // Opus works best at 48kHz
+                Channels = 2,
+                BitsPerSample = 16, // PCM input is still 16-bit
+                Codec = AudioCodec.OPUS,
+                BufferSize = 960, // 20ms frames @ 48kHz = 960 samples
+                OpusBitrate = bitrate,
+                OpusComplexity = 10
             };
         }
     }

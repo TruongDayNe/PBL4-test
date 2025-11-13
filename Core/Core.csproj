@@ -36,6 +36,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Concentus">
+      <HintPath>..\packages\Concentus.2.2.2\lib\netstandard2.0\Concentus.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Nefarius.ViGEm.Client, Version=1.21.256.0, Culture=neutral, PublicKeyToken=null, processorArchitecture=MSIL">
       <HintPath>..\packages\Nefarius.ViGEm.Client.1.21.256\lib\netstandard2.0\Nefarius.ViGEm.Client.dll</HintPath>
     </Reference>
@@ -148,6 +152,8 @@
     <Compile Include="Audio\AudioConverter.cs" />
     <Compile Include="Audio\AudioManager.cs" />
     <Compile Include="Audio\AudioPlayback.cs" />
+    <Compile Include="Audio\OpusEncoder.cs" />
+    <Compile Include="Audio\OpusDecoder.cs" />
     <Compile Include="Input\KeyboardCapture.cs" />
     <Compile Include="Input\IJKLKeyboardCapture.cs" />
     <Compile Include="Input\KeyboardSimulator.cs" />
@@ -156,11 +162,13 @@
     <Compile Include="ViGEm\ViGEmManager.cs" />
     <Compile Include="Models\AudioPacket.cs" />
     <Compile Include="Models\FecGroup.cs" />
+    <Compile Include="Models\KeyMappingConfig.cs" />
     <Compile Include="Networking\FecXor.cs" />
     <Compile Include="Networking\NetworkService.cs" />
     <Compile Include="Networking\NetworkStats.cs" />
     <Compile Include="Networking\PackerParser.cs" />
     <Compile Include="Util\BigEndian.cs" />
+    <Compile Include="Util\ConfigHelper.cs" />
     <Compile Include="Models\UdpPacket.cs" />
     <Compile Include="Models\TelemetrySnapshot.cs" />
     <Compile Include="Networking\PacketBuilder.cs" />
