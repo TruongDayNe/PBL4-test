@@ -3,6 +3,7 @@ using RealTimeUdpStream.Core.Networking;
 using RealTimeUdpStream.Core.Models;
 using RealTimeUdpStream.Core.Util;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -13,7 +14,6 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using RealtimeUdpStream.Core.Networking;
-using System.Collections.Concurrent;
 
 namespace WPFUI_NEW.Services
 {
@@ -22,56 +22,34 @@ namespace WPFUI_NEW.Services
     public class ScreenSender : IDisposable
     {
         public event FrameCapturedHandler OnFrameCaptured;
-
-        public const int FRAMERATE_MS = 33; // ~30 FPS
-        private const int FEC_GROUP_SIZE = 10;
+        public const int FRAMERATE_MS = 33;
+        private const int FEC_GROUP_SIZE = 10;
+        private const int KEY_FRAME_INTERVAL = 30; // Gửi full frame mỗi 30 frame (~1 giây)
 
         private readonly UdpPeer _peer;
-        private  ConcurrentBag<IPEndPoint> _clients = new ConcurrentBag<IPEndPoint>(); // Danh sách client
-        private readonly ScreenProcessor _screenProcessor;
+        private ConcurrentBag<IPEndPoint> _clients = new ConcurrentBag<IPEndPoint>();
+        private readonly ScreenProcessor _screenProcessor;
         private static readonly ImageCodecInfo JpegCodec = GetEncoder(ImageFormat.Jpeg);
         private readonly EncoderParameters _encoderParams;
+
+        private long _frameCount = 0;
 
         public int ClientCount => _clients.Count;
 
         public ScreenSender(UdpPeer peer, ScreenProcessor processor)
         {
-            _peer = peer; // peer được chia sẻ
+            _peer = peer;
             _screenProcessor = processor;
-
             _encoderParams = new EncoderParameters(1);
-            _encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 50L);
+            _encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 50L); // Chất lượng 50
         }
 
-        public void AddClient(IPEndPoint clientEndPoint)
-        {
-            _clients.Add(clientEndPoint);
-            Debug.WriteLine($"[ScreenSender] Đã thêm client: {clientEndPoint}. Tổng số: {ClientCount}");
-        }
+        public void AddClient(IPEndPoint clientEndPoint) => _clients.Add(clientEndPoint);
 
-        // THÊM HÀM MỚI NÀY:
         public void RemoveClient(IPEndPoint clientEndPoint)
         {
-            // ConcurrentBag không có hàm Remove trực tiếp, chúng ta phải tạo lại list
-            var currentClients = _clients.ToList();
-            if (currentClients.Remove(clientEndPoint))
-            {
-                // Tạo lại ConcurrentBag từ danh sách đã cập nhật
-                _clients = new ConcurrentBag<IPEndPoint>(currentClients);
-                Debug.WriteLine($"[ScreenSender] Đã xóa client: {clientEndPoint}. Còn lại: {ClientCount}");
-            }
-        }
-
-        private async Task SendToAllClientsAsync(UdpPacket packet)
-        {
-            if (_clients.IsEmpty) return;
-
-            var sendTasks = new List<Task>(_clients.Count);
-            foreach (var client in _clients)
-            {
-                sendTasks.Add(_peer.SendToAsync(packet, client));
-            }
-            await Task.WhenAll(sendTasks);
+            var list = _clients.ToList();
+            if (list.Remove(clientEndPoint)) _clients = new ConcurrentBag<IPEndPoint>(list);
         }
 
         public async Task SendScreenLoopAsync(CancellationToken token)
@@ -81,89 +59,91 @@ namespace WPFUI_NEW.Services
             while (!token.IsCancellationRequested)
             {
                 var watch = Stopwatch.StartNew();
+
+                if (_clients.IsEmpty)
+                {
+                    await Task.Delay(100, token);
+                    continue;
+                }
+
                 try
                 {
-                    if (_clients.IsEmpty)
+                    // Logic Drop Frame: Nếu mạng đang quá tải hoặc xử lý chậm, vòng lặp này sẽ tự delay
+                    // do await SendToAllClientsAsync. Lần lặp tiếp theo sẽ lấy ảnh MỚI NHẤT từ Processor.
+
+                    byte[] compressedData = null;
+                    Rectangle sentRect = Rectangle.Empty;
+                    bool isKeyFrame = (_frameCount % KEY_FRAME_INTERVAL == 0);
+
+                    _screenProcessor.ProcessScreenImage((fullImg, dirtyRect) =>
                     {
-                        await Task.Delay(FRAMERATE_MS, token);
-                        continue;
-                    }
+                        if (fullImg == null) return;
+                        Bitmap bmpToCompress = null;
+                        bool needDisposeBmp = false;
 
-                    // --- ĐOẠN CODE THAY THẾ MỚI --- (BẮT ĐẦU)
-                    byte[] largeData = null;
-
-                    // SỬ DỤNG PHƯƠNG THỨC MỚI CỦA SCREEN PROCESSOR
-                    _screenProcessor.ProcessScreenImage(img =>
-                    {
-                        // 'img' ở đây là ảnh GỐC, đang được ReadLock
-                        if (img == null) return;
-
-                        // 1. Nén ảnh gốc thành JPEG
-                        using (var ms = new MemoryStream())
+                        try
                         {
-                            img.Save(ms, JpegCodec, _encoderParams);
-                            largeData = ms.ToArray();
-                        }
-
-                        // 2. Gửi ảnh GỐC đi để preview
-                        // KHÔNG CLONE() NỮA!
-                        OnFrameCaptured?.Invoke(img);
-                    });
-
-                    if (largeData == null) // Bỏ qua nếu không lấy được ảnh
-                    {
-                        continue;
-                    }
-
-                    int maxPayloadSize = _peer.MaximumTransferUnit - PacketBuilder.HeaderSize;
-                    int totalChunks = (int)Math.Ceiling((double)largeData.Length / maxPayloadSize);
-                    sequenceNumber++;
-
-                    var dataPacketsInGroup = new List<UdpPacket>();
-
-                    for (ushort i = 0; i < totalChunks; i++)
-                    {
-                        int chunkOffset = i * maxPayloadSize;
-                        int chunkSize = Math.Min(maxPayloadSize, largeData.Length - chunkOffset);
-
-                        var chunkPayloadBuffer = BytePool.Rent(chunkSize);
-                        Buffer.BlockCopy(largeData, chunkOffset, chunkPayloadBuffer, 0, chunkSize);
-                        var payloadSegment = new ArraySegment<byte>(chunkPayloadBuffer, 0, chunkSize);
-
-                        var header = new UdpPacketHeader
-                        {
-                            Version = 1,
-                            PacketType = (byte)UdpPacketType.Video,
-                            SequenceNumber = sequenceNumber,
-                            TotalChunks = (ushort)totalChunks,
-                            ChunkId = i
-                        };
-
-                        var dataPacket = new UdpPacket(header, payloadSegment) { IsPayloadFromPool = true };
-
-                        await SendToAllClientsAsync(dataPacket);
-                        dataPacketsInGroup.Add(dataPacket);
-
-                        if (dataPacketsInGroup.Count == FEC_GROUP_SIZE || i == totalChunks - 1)
-                        {
-                            using (var fecPacket = FecXor.CreateParityPacket(dataPacketsInGroup))
+                            // Quyết định gửi KeyFrame hay Partial
+                            // Nếu dirtyRect rỗng và không phải KeyFrame -> Không có gì thay đổi -> Skip
+                            if (!isKeyFrame && (dirtyRect.IsEmpty || dirtyRect.Width == 0 || dirtyRect.Height == 0))
                             {
-                                if (fecPacket != null)
+                                return; // Skip processing
+                            }
+
+                            // Nếu là KeyFrame hoặc vùng thay đổi quá lớn (> 70% màn hình) -> Gửi Full
+                            if (isKeyFrame || (dirtyRect.Width * dirtyRect.Height > fullImg.Width * fullImg.Height * 0.7))
+                            {
+                                isKeyFrame = true; // Force KeyFrame
+                                sentRect = new Rectangle(0, 0, fullImg.Width, fullImg.Height);
+                                bmpToCompress = (Bitmap)fullImg; // Dùng trực tiếp ảnh gốc
+                            }
+                            else
+                            {
+                                // Incremental Update: Cắt vùng DirtyRect
+                                sentRect = dirtyRect;
+                                bmpToCompress = new Bitmap(dirtyRect.Width, dirtyRect.Height);
+                                needDisposeBmp = true;
+
+                                using (var g = Graphics.FromImage(bmpToCompress))
                                 {
-                                    var fecHeader = fecPacket.Header;
-                                    fecHeader.SequenceNumber = sequenceNumber;
-                                    fecHeader.TotalChunks = (ushort)totalChunks;
-                                    fecHeader.ChunkId = dataPacketsInGroup.First().Header.ChunkId;
-                                    fecPacket.Header = fecHeader;
-                                    await SendToAllClientsAsync(fecPacket);
+                                    // Vẽ phần thay đổi vào bmp nhỏ
+                                    g.DrawImage(fullImg,
+                                        new Rectangle(0, 0, dirtyRect.Width, dirtyRect.Height),
+                                        dirtyRect,
+                                        GraphicsUnit.Pixel);
                                 }
                             }
 
-                            foreach (var p in dataPacketsInGroup) p.Dispose();
-                            dataPacketsInGroup.Clear();
-                        }
-                        dataPacketsInGroup.Clear();
+                            // Nén ảnh
+                            using (var ms = new MemoryStream())
+                            {
+                                bmpToCompress.Save(ms, JpegCodec, _encoderParams);
+                                compressedData = ms.ToArray();
+                            }
+
+                            // Preview UI (Chỉ gửi KeyFrame để UI đỡ lag, hoặc gửi fullImg nếu muốn mượt)
+                            OnFrameCaptured?.Invoke(fullImg);
+                        }
+                        finally
+                        {
+                            if (needDisposeBmp && bmpToCompress != null)
+                                bmpToCompress.Dispose();
+                        }
+                    });
+
+                    if (compressedData == null)
+                    {
+                        // Không có dữ liệu để gửi (không thay đổi), đợi frame tiếp
+                        await Task.Delay(10, token);
+                        continue;
                     }
+
+                    _frameCount++;
+                    sequenceNumber++;
+
+                    // Phân mảnh và gửi
+                    await FragmentAndSendAsync(compressedData, sequenceNumber, isKeyFrame, sentRect);
+
                 }
                 catch (Exception ex)
                 {
@@ -171,24 +151,82 @@ namespace WPFUI_NEW.Services
                 }
 
                 watch.Stop();
+                // Priority: Low Latency -> Nếu xử lý lâu hơn quy định, chạy ngay frame tiếp theo
                 var delay = FRAMERATE_MS - (int)watch.ElapsedMilliseconds;
-                if (delay > 0)
+                if (delay > 0) await Task.Delay(delay, token);
+            }
+        }
+
+        private async Task FragmentAndSendAsync(byte[] data, uint sequence, bool isKeyFrame, Rectangle rect)
+        {
+            int maxPayloadSize = _peer.MaximumTransferUnit - PacketBuilder.HeaderSize;
+            int totalChunks = (int)Math.Ceiling((double)data.Length / maxPayloadSize);
+            var groupPackets = new List<UdpPacket>();
+
+            for (ushort i = 0; i < totalChunks; i++)
+            {
+                int offset = i * maxPayloadSize;
+                int size = Math.Min(maxPayloadSize, data.Length - offset);
+                var chunkBuffer = BytePool.Rent(size);
+                Buffer.BlockCopy(data, offset, chunkBuffer, 0, size);
+
+                var header = new UdpPacketHeader
                 {
-                    await Task.Delay(delay, token);
+                    Version = 1,
+                    PacketType = (byte)UdpPacketType.Video,
+                    SequenceNumber = sequence,
+                    TimestampMs = (ulong)DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond,
+                    TotalChunks = (ushort)totalChunks,
+                    ChunkId = i,
+                    Flags = isKeyFrame ? (byte)PacketFlags.IsKeyframe : (byte)0,
+                    // Set coordinates info
+                    RectX = (ushort)rect.X,
+                    RectY = (ushort)rect.Y,
+                    RectW = (ushort)rect.Width,
+                    RectH = (ushort)rect.Height
+                };
+
+                var packet = new UdpPacket(header, new ArraySegment<byte>(chunkBuffer, 0, size))
+                { IsPayloadFromPool = true };
+
+                await SendToAllClientsAsync(packet);
+                groupPackets.Add(packet);
+
+                // FEC Logic
+                if (groupPackets.Count == FEC_GROUP_SIZE || i == totalChunks - 1)
+                {
+                    using (var fecPacket = FecXor.CreateParityPacket(groupPackets))
+                    {
+                        if (fecPacket != null)
+                        {
+                            // Copy metadata quan trọng sang FEC
+                            var fh = fecPacket.Header;
+                            fh.SequenceNumber = sequence;
+                            fh.TotalChunks = (ushort)totalChunks;
+                            fh.ChunkId = groupPackets[0].Header.ChunkId;
+                            fh.RectX = (ushort)rect.X; // Giữ metadata để recover nếu cần
+                            fecPacket.Header = fh;
+                            await SendToAllClientsAsync(fecPacket);
+                        }
+                    }
+                    foreach (var p in groupPackets) p.Dispose();
+                    groupPackets.Clear();
                 }
             }
         }
 
-        private static ImageCodecInfo GetEncoder(ImageFormat format)
+        private async Task SendToAllClientsAsync(UdpPacket packet)
         {
-            ImageCodecInfo[] codecs = ImageCodecInfo.GetImageEncoders();
-            return Array.Find(codecs, codec => codec.FormatID == format.Guid);
+            var tasks = new List<Task>();
+            foreach (var client in _clients) tasks.Add(_peer.SendToAsync(packet, client));
+            await Task.WhenAll(tasks);
         }
 
-        public void Dispose()
+        private static ImageCodecInfo GetEncoder(ImageFormat format)
         {
-            // ViewMode dispose resources if needed
-            //_server?.Dispose();
+            return ImageCodecInfo.GetImageEncoders().FirstOrDefault(c => c.FormatID == format.Guid);
         }
+
+        public void Dispose() { /* ... */ }
     }
 }

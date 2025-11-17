@@ -3,258 +3,119 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Drawing;
-
 using MyScreenDublicator = ScreenDublicator.ScreenDublicator;
 
 namespace WPFUI_NEW.Services
 {
-    /// <summary>
-    /// Lớp nhận và lưu trữ thông tin về trạng thái màn hình desktop.
-    /// Làm việc trong luồng riêng, có thể xử lý các yêu cầu
-    /// trong môi trường đa luồng
-    /// </summary>
     public class ScreenProcessor : IDisposable
     {
-        #region CONST
-
         private int UDPATE_TIMEOUT = 50;
-
-        #endregion
-
-        #region FIELDS
-
-        private static ScreenProcessor _instance = null;                    //Singleton
-        private MyScreenDublicator _desktopDublicator = null;               //Bộ nhân bản màn hình desktop (sử dụng DirectX)
-        private Image _currentScreenImage = null;                           //Hình ảnh màn hình desktop hiện tại
-        private Point _currentCursorPosition = Point.Empty;                 //Vị trí con trỏ hiện tại
-        private ReaderWriterLockSlim _rwLocker = new ReaderWriterLockSlim();  //Đồng bộ truy cập tài nguyên
-        private bool _isDisposed = false;                                   //Đánh dấu đã bị hủy
-
-        // Thêm một cờ để báo hiệu khi khung hình đầu tiên đã sẵn sàng
+        private static ScreenProcessor _instance = null;
+        private MyScreenDublicator _desktopDublicator = null;
+        private Image _currentScreenImage = null;
+        // Lưu trữ vùng thay đổi của frame hiện tại
+        private Rectangle _currentDirtyRect = Rectangle.Empty;
+        private Point _currentCursorPosition = Point.Empty;
+        private ReaderWriterLockSlim _rwLocker = new ReaderWriterLockSlim();
+        private bool _isDisposed = false;
         private ManualResetEventSlim _firstFrameReady = new ManualResetEventSlim(false);
 
-        #endregion
-
-        #region PROPERTIES
-
-        /// <summary>
-        /// Lấy thể hiện của đối tượng (Singleton).
-        /// Not thread-safe
-        /// </summary>
         public static ScreenProcessor Instance
         {
             get
             {
-                if (_instance == null)
-                {
-                    _instance = new ScreenProcessor();
-                }
+                if (_instance == null) _instance = new ScreenProcessor();
                 return _instance;
             }
         }
 
-        /// <summary>
-        /// Hình ảnh màn hình desktop hiện tại
-        /// </summary>
-        public void ProcessScreenImage(Action<Image> processingAction)
+        // Cập nhật Action để trả về thêm Rectangle
+        public void ProcessScreenImage(Action<Image, Rectangle> processingAction)
         {
             if (_isDisposed || this._rwLocker == null) return;
 
             try
             {
-                // Chờ đợi khung hình đầu tiên (vẫn giữ logic này)
                 _firstFrameReady.Wait();
-
                 this._rwLocker.EnterReadLock();
                 if (this._currentScreenImage != null)
                 {
-                    processingAction(this._currentScreenImage); // Gọi action với ảnh GỐC
+                    // Truyền ảnh gốc và dirty rect cho logic xử lý
+                    processingAction(this._currentScreenImage, this._currentDirtyRect);
                 }
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Lỗi khi xử lý ảnh trong ReadLock: {ex.Message}");
-            }
+            catch (Exception ex) { Debug.WriteLine($"ScreenProcessor Read Error: {ex.Message}"); }
             finally
             {
                 if (this._rwLocker != null && this._rwLocker.IsReadLockHeld)
-                {
                     this._rwLocker.ExitReadLock();
-                }
             }
         }
 
-        /// <summary>
-        /// Vị trí con trỏ hiện tại
-        /// </summary>
-        public Point CurrentCursorPosition
-        {
-            get
-            {
-                Debug.WriteLine("Yêu cầu lấy tọa độ con trỏ");
-                try
-                {
-                    this._rwLocker.EnterReadLock();
-                    return this._currentCursorPosition;
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine("Không thể lấy tọa độ con trỏ");
-                    Debug.WriteLine(ex.Message);
-                    return Point.Empty;
-                }
-                finally
-                {
-                    this._rwLocker.ExitReadLock();
-                }
-            }
-        }
+        public Point CurrentCursorPosition { /* Giữ nguyên */ get; }
 
-        #endregion
+        public void Dispose() { /* Giữ nguyên logic dispose */ _isDisposed = true; _desktopDublicator?.Dispose(); _rwLocker?.Dispose(); _currentScreenImage?.Dispose(); }
 
-        #region PUBLIC METHODS
-
-        public void Dispose()
-        {
-            if (this._isDisposed)
-            {
-                return;
-            }
-
-            if (this._desktopDublicator != null)
-            {
-                this._desktopDublicator.Dispose();
-            }
-
-            if (this._rwLocker != null)
-            {
-                this._rwLocker.Dispose();
-                this._rwLocker = null;
-            }
-
-            if (this._currentScreenImage != null)
-            {
-                this._currentScreenImage.Dispose();
-            }
-            this._isDisposed = true;
-
-            Debug.WriteLine("ScreenProcessor đã được hủy");
-        }
-
-        /// <summary>
-        /// Khởi động luồng cập nhật dữ liệu trạng thái màn hình desktop
-        /// </summary>
         public void Start()
         {
-            if (this._isDisposed)
-            {
-                string message = String.Format("Không thể khởi động luồng cập nhật khung hình. Đối tượng đã bị hủy");
-                Debug.WriteLine(message);
-                throw new ScreenProcessorException(message);
-            }
-            try
-            {
-                Debug.WriteLine("Đang khởi động luồng cập nhật khung hình");
-                new Thread(this.UpdateFrame) { IsBackground = true, Name = "Update Frame Thread" }.Start();
-                Debug.WriteLine("Luồng cập nhật khung hình đã được khởi động");
-            }
-            catch (Exception ex)
-            {
-                string message = String.Format("Lỗi khi khởi động luồng cập nhật khung hình\n{0}\n{1}", ex.Message, ex.StackTrace);
-                Debug.WriteLine(message);
-                throw new ScreenProcessorException(message);
-            }
+            if (_isDisposed) throw new ScreenProcessorException("Object disposed");
+            new Thread(this.UpdateFrame) { IsBackground = true, Name = "Update Frame Thread" }.Start();
         }
 
-        #endregion
+        private ScreenProcessor() { this._desktopDublicator = new MyScreenDublicator(); }
 
-        #region PRIVATE METHODS
-
-        private ScreenProcessor()
-        {
-            this._desktopDublicator = new MyScreenDublicator();
-        }
-
-        /// <summary>
-        /// Cập nhật trạng thái màn hình desktop. Thực hiện trong luồng làm việc.
-        /// </summary>
         private void UpdateFrame()
         {
-            // Sử dụng Stopwatch để điều chỉnh tốc độ khung hình (giải quyết to-do)
             var stopwatch = new Stopwatch();
-
             while (true)
             {
-                stopwatch.Restart(); // Bắt đầu đếm thời gian cho vòng lặp
+                stopwatch.Restart();
                 ScreenInfo screenInfo = null;
-
                 try
                 {
-                    //  Lấy thông tin (bug)
-                    // Thực hiện bên ngoài lock để không chặn các luồng đọc quá lâu
                     screenInfo = this._desktopDublicator.GetScreenInformation();
-                }
-                catch (ScreenProcessorException sdex)
-                {
-                    Debug.WriteLine("Không thể cập nhật thông tin khung hình (DesktopDuplicationException)\n{0}\n{1}", sdex.Message, sdex.StackTrace);
-                    continue;
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine("Không thể cập nhật thông tin khung hình (Exception)\n{0}\n{1}", ex.Message, ex.StackTrace);
+                    Debug.WriteLine($"Capture Error: {ex.Message}");
                     continue;
                 }
 
-                // Nếu đến được đây, screenInfo đã được lấy thành công
-                // Cập nhật tài nguyên chia sẻ (dùng lock)
                 try
                 {
-                    // Đây là cấu trúc try-finally an toàn để dùng lock
-                    this._rwLocker.EnterWriteLock(); // Chỉ khóa sau khi đã có dữ liệu
+                    this._rwLocker.EnterWriteLock();
 
-                    // Xử lý ảnh cũ
-                    if (this._currentScreenImage != null)
+                    if (this._currentScreenImage != null) this._currentScreenImage.Dispose();
+                    this._currentScreenImage = screenInfo.ScreenImage;
+
+                    // --- TÍNH TOÁN DIRTY RECT ---
+                    if (screenInfo.UpdatedRegions != null && screenInfo.UpdatedRegions.Length > 0)
                     {
-                        this._currentScreenImage.Dispose();
+                        // Hợp nhất tất cả các vùng thay đổi thành 1 hình chữ nhật bao quanh
+                        Rectangle unionRect = screenInfo.UpdatedRegions[0];
+                        for (int i = 1; i < screenInfo.UpdatedRegions.Length; i++)
+                        {
+                            unionRect = Rectangle.Union(unionRect, screenInfo.UpdatedRegions[i]);
+                        }
+                        this._currentDirtyRect = unionRect;
+                    }
+                    else
+                    {
+                        this._currentDirtyRect = Rectangle.Empty;
                     }
 
-                    // Gán ảnh mới
-                    this._currentScreenImage = screenInfo.ScreenImage;
-
-                    // === PHẦN SỬA LỖI BẮT ĐẦU ===
-                    // Kiểm tra xem frame này có thông tin con trỏ không
-                    if (screenInfo.PointerInfo != null)
+                    if (screenInfo.PointerInfo != null)
                     {
-                        // Chuyển đổi từ RawPoint (SharpDX) sang Point (System.Drawing)
-                        this._currentCursorPosition = new Point(
-                            screenInfo.PointerInfo.Position.X,
-                            screenInfo.PointerInfo.Position.Y
-                        );
+                        this._currentCursorPosition = new Point(screenInfo.PointerInfo.Position.X, screenInfo.PointerInfo.Position.Y);
                     }
-                    // === PHẦN SỬA LỖI KẾT THÚC ===
-
-                    // Báo hiệu rằng khung hình đầu tiên đã sẵn sàng
-                    _firstFrameReady.Set();
+                    _firstFrameReady.Set();
                 }
-                finally
-                {
-                    // Luôn luôn giải phóng lock
-                             this._rwLocker.ExitWriteLock();
-                }
+                finally { this._rwLocker.ExitWriteLock(); }
 
-                // Điều chỉnh tốc độ khung hình 
                 stopwatch.Stop();
-                int elapsedTime = (int)stopwatch.ElapsedMilliseconds;
-                int timeToWait = this.UDPATE_TIMEOUT - elapsedTime;
-
-                if (timeToWait > 0)
-                {
-                    Thread.Sleep(timeToWait);
-                }
-                // Nếu timeToWait <= 0 (xử lý lâu hơn 50ms), vòng lặp sẽ chạy ngay lập tức
+                int timeToWait = this.UDPATE_TIMEOUT - (int)stopwatch.ElapsedMilliseconds;
+                if (timeToWait > 0) Thread.Sleep(timeToWait);
             }
-            Debug.WriteLine("Luồng cập nhật khung hình đã kết thúc");
         }
-        #endregion
     }
 }

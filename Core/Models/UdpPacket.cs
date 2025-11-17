@@ -4,47 +4,41 @@ using System.Net;
 
 namespace RealTimeUdpStream.Core.Models
 {
-    // Cấu trúc header UDP chung (21 bytes)
+    // Cập nhật Header: Thêm tọa độ và kích thước (Total: 29 bytes)
     public struct UdpPacketHeader
     {
         public byte Version;
         public byte PacketType;
-        public byte Flags;
+        public byte Flags;          // Bit 0: IsKeyFrame
         public uint SequenceNumber; // big-endian
-        public ulong TimestampMs;    // big-endian
+        public ulong TimestampMs;   // big-endian
         public ushort Checksum;     // big-endian
         public ushort TotalChunks;  // big-endian
         public ushort ChunkId;      // big-endian
+
+        // --- NEW FIELDS FOR PARTIAL UPDATES ---
+        public ushort RectX;        // big-endian
+        public ushort RectY;        // big-endian
+        public ushort RectW;        // big-endian
+        public ushort RectH;        // big-endian
     }
 
-    // Lớp wrapper cho gói tin UDP, chứa header và payload
-    // Lớp này giờ đây implement IDisposable để quản lý tài nguyên từ BytePool
     public class UdpPacket : IDisposable
     {
         public UdpPacketHeader Header { get; set; }
         public ArraySegment<byte> Payload { get; }
         public IPEndPoint Source { get; set; }
-
-        /// <summary>
-        /// Cờ để xác định xem payload có phải là buffer từ pool hay không.
-        /// </summary>
         public bool IsPayloadFromPool { get; set; }
 
         private bool _disposed = false;
 
-        /// <summary>
-        /// Constructor chính, nhận một ArraySegment để tránh copy dữ liệu.
-        /// </summary>
         public UdpPacket(UdpPacketHeader header, ArraySegment<byte> payload)
         {
             Header = header;
             Payload = payload;
-            IsPayloadFromPool = false; // Mặc định không phải từ pool
+            IsPayloadFromPool = false;
         }
 
-        /// <summary>
-        /// Constructor tiện ích dùng cho các packet không có payload.
-        /// </summary>
         public UdpPacket(UdpPacketType type, uint sequenceNumber)
         {
             Header = new UdpPacketHeader
@@ -58,11 +52,6 @@ namespace RealTimeUdpStream.Core.Models
             IsPayloadFromPool = false;
         }
 
-        // CÁC CONSTRUCTOR CŨ NHẬN byte[] ĐÃ BỊ LOẠI BỎ ĐỂ TRÁNH NHẦM LẪN
-
-        /// <summary>
-        /// Trả lại buffer của payload về BytePool nếu cần.
-        /// </summary>
         public void Dispose()
         {
             if (!_disposed)
@@ -76,19 +65,18 @@ namespace RealTimeUdpStream.Core.Models
         }
     }
 
-    // Enum và Flags giữ nguyên, không thay đổi
     public enum UdpPacketType : byte
     {
         Input = 0x01, Ping = 0x02, Report = 0x20,
         Video = 0x10, Audio = 0x11, Pong = 0x12, Control = 0x13, Fec = 0x14, Screen = 0x15, Keyboard = 0x16, ViGEm = 0x17,
-
-        Disconnect = 0x18, // Client tự ngắt kết nối
-        Kick = 0x19        // Host đuổi Client
+        Disconnect = 0x18, Kick = 0x19
     }
 
     [Flags]
     public enum PacketFlags : byte
     {
-        None = 0, IsKeyframe = 1 << 0, IsPartial = 1 << 2
+        None = 0,
+        IsKeyframe = 1 << 0, // Frame đầy đủ
+        IsPartial = 1 << 2
     }
 }
