@@ -146,6 +146,13 @@ namespace RealTimeUdpStream.Core.Input
             
             foreach (var kvp in stringMapping)
             {
+                // Skip empty or null mappings
+                if (string.IsNullOrWhiteSpace(kvp.Value))
+                {
+                    Debug.WriteLine($"  {kvp.Key} → (skipped - empty mapping)");
+                    continue;
+                }
+                
                 if (TryParseVirtualKey(kvp.Key, out VirtualKey sourceKey) &&
                     TryParseVirtualKey(kvp.Value, out VirtualKey targetKey))
                 {

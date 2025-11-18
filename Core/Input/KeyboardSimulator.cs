@@ -66,16 +66,19 @@ namespace RealTimeUdpStream.Core.Input
                     ? _keyMapping[keyEvent.Key]
                     : keyEvent.Key;
 
+                Console.WriteLine($"[KeyboardSimulator] Mapping: {keyEvent.Key} -> {targetKey} (Action: {keyEvent.Action})");
+                
                 if (keyEvent.Action == KeyAction.Down)
                 {
                     KeyDown(targetKey);
+                    Console.WriteLine($"[KeyboardSimulator] ✓ Pressed: {targetKey}");
                 }
                 else
                 {
                     KeyUp(targetKey);
+                    Console.WriteLine($"[KeyboardSimulator] ✓ Released: {targetKey}");
                 }
 
-                Console.WriteLine($"[KeyboardSimulator] Gia lap phim: {keyEvent.Key} -> {targetKey} {keyEvent.Action}");
                 Debug.WriteLine($"[KeyboardSimulator] Simulated {targetKey} {keyEvent.Action}");
             }
             catch (Exception ex)

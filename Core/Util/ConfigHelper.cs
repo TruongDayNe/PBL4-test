@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace RealTimeUdpStream.Core.Util
 {
@@ -69,10 +70,26 @@ namespace RealTimeUdpStream.Core.Util
         {
             if (_currentConfig == null)
             {
-                Debug.WriteLine("⚠️ Config not loaded yet, loading default...");
+                Console.WriteLine("⚠️ [ConfigHelper.GetConfig] Config not loaded yet, loading from file...");
+                Debug.WriteLine("⚠️ Config not loaded yet, loading from file...");
                 LoadConfig();
             }
 
+            Console.WriteLine($"[ConfigHelper.GetConfig] Returning config with {_currentConfig.KeyboardMapping.Count} keyboard mappings");
+            
+            // Log first mapping to verify
+            if (_currentConfig.KeyboardMapping.Count > 0)
+            {
+                var first = _currentConfig.KeyboardMapping.First();
+                Console.WriteLine($"[ConfigHelper.GetConfig] First mapping: {first.Key} → {first.Value}");
+                
+                // Specifically check W mapping
+                if (_currentConfig.KeyboardMapping.ContainsKey("W"))
+                {
+                    Console.WriteLine($"[ConfigHelper.GetConfig] ✓ W → {_currentConfig.KeyboardMapping["W"]}");
+                }
+            }
+            
             return _currentConfig;
         }
 

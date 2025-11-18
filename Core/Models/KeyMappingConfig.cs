@@ -127,6 +127,16 @@ namespace RealTimeUdpStream.Core.Models
                 Console.WriteLine($"✓ Config loaded from: {filePath}");
                 Console.WriteLine($"  - Keyboard mappings: {config.KeyboardMapping.Count}");
                 
+                // Verify W mapping specifically
+                if (config.KeyboardMapping.ContainsKey("W"))
+                {
+                    Console.WriteLine($"  ✓ W is mapped to: {config.KeyboardMapping["W"]}");
+                }
+                else
+                {
+                    Console.WriteLine("  ❌ W mapping NOT FOUND in config!");
+                }
+                
                 // Debug: print first few keyboard mappings
                 int count = 0;
                 foreach (var kvp in config.KeyboardMapping)

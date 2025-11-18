@@ -52,6 +52,13 @@
 		</Compile>
 	</ItemGroup>
 
+	<!-- Copy keymapping.json config file to output -->
+	<ItemGroup>
+		<None Include="..\keymapping.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
 	<!-- Post-build: Copy .NET Framework 4.8 DLLs to fix System.Text.Json version conflict -->
 	<!-- Use AfterTargets="AfterBuild" to ensure this runs AFTER all default copy operations -->
 	<Target Name="CopyFrameworkDependencies" AfterTargets="AfterBuild">
