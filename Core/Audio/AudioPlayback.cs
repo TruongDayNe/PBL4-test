@@ -38,8 +38,8 @@ namespace RealTimeUdpStream.Core.Audio
         }
 
         // Buffer management - HIGH BUFFERING for maximum stability (trades latency for smoothness)
-        private const int MAX_BUFFER_DURATION_MS = 1500; // 5 seconds maximum buffer
-        private const int MIN_BUFFER_DURATION_MS = 500; // 5 seconds minimum before starting playback (high stability)
+        private const int MAX_BUFFER_DURATION_MS = 500; // 5 seconds maximum buffer
+        private const int MIN_BUFFER_DURATION_MS = 100; // 5 seconds minimum before starting playback (high stability)
 
         // Delay data structure
         private class DelayedAudioData
