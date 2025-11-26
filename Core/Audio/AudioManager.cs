@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace RealTimeUdpStream.Core.Audio
 {
@@ -21,6 +22,22 @@ namespace RealTimeUdpStream.Core.Audio
         private bool _isStreaming = false;
         private bool _isReceiving = false;
         private bool _isMuted = false;
+
+        // THÊM: Danh sách các IP bị tắt tiếng
+        private readonly HashSet<string> _mutedIps = new HashSet<string>();
+        private readonly object _muteLock = new object();
+
+
+        public void MuteClient(string clientIp, bool isMuted)
+        {
+            lock (_muteLock)
+            {
+                if (isMuted) _mutedIps.Add(clientIp);
+                else _mutedIps.Remove(clientIp);
+
+                Debug.WriteLine($"[AudioManager] Client {clientIp} muted: {isMuted}");
+            }
+        }
         public bool IsMuted
         {
             get => _isMuted;
@@ -209,6 +226,13 @@ namespace RealTimeUdpStream.Core.Audio
         private void HandleReceivedPacket(UdpPacket packet)
         {
             if (!_isReceiving || packet.Header.PacketType != AUDIO_PACKET_TYPE) return;
+
+            // Kiểm tra xem IP này có bị mute không
+            string sourceIp = packet.Source.Address.ToString();
+            lock (_muteLock)
+            {
+                if (_mutedIps.Contains(sourceIp)) return; // Bỏ qua gói tin nếu bị mute
+            }
 
             try
             {

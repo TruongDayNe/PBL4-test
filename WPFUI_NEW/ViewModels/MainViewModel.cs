@@ -44,7 +44,13 @@ namespace WPFUI_NEW.ViewModels
             CurrentViewModel = SelectionViewModel;
         }
 
-        private void ShowHostView() => CurrentViewModel = HostViewModel;
+        private void ShowHostView()
+        {
+            CurrentViewModel = HostViewModel;
+
+            // Chỉ khi chuyển sang màn hình Host mới bắt đầu lắng nghe
+            HostViewModel.StartTcpListening();
+        }
         private void ShowClientConnectView() => CurrentViewModel = ClientConnectViewModel;
         private void ShowSelectionView() => CurrentViewModel = SelectionViewModel;
 

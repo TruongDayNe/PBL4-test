@@ -19,7 +19,7 @@ namespace ScreenDublicator
 
         private readonly int ADAPTER = 0;
         private readonly int MONITOR = 0;
-        private readonly int TIMEOUT = 10000;
+        private readonly int TIMEOUT = 1000;
         private readonly int ATTEMPTS = 10;
 
         #endregion
@@ -131,6 +131,7 @@ namespace ScreenDublicator
         {
             ScreenInfo screenInfo = new ScreenInfo();
             SharpDX.DXGI.Resource screenResource = null;
+            bool frameAcquired = false; // <--- QUAN TRỌNG: Cờ đánh dấu đã lấy được frame hay chưa
             for (int i = 0; i < this.ATTEMPTS; i++)
             {
                 try
@@ -138,6 +139,7 @@ namespace ScreenDublicator
                     //Lấy khung hình
 
                     this._outputDublication.AcquireNextFrame(this.TIMEOUT, out this._screenInfo, out screenResource);
+                    frameAcquired = true;
 
                     using (Texture2D screenTexture2D = screenResource.QueryInterface<Texture2D>())
                     {
@@ -184,8 +186,25 @@ namespace ScreenDublicator
                 }
                 finally
                 {
-                    if (screenResource != null) screenResource.Dispose();
-                    this._outputDublication.ReleaseFrame();
+                    if (screenResource != null)
+                    {
+                        screenResource.Dispose();
+                        screenResource = null;
+                    }
+                    // SỬA LỖI ACCESS VIOLATION TẠI ĐÂY:
+                    // Chỉ ReleaseFrame nếu trước đó AcquireNextFrame THÀNH CÔNG
+                    if (frameAcquired)
+                    {
+                        try
+                        {
+                            this._outputDublication.ReleaseFrame();
+                        }
+                        catch (Exception releaseEx)
+                        {
+                            Debug.WriteLine($"Lỗi ReleaseFrame: {releaseEx.Message}");
+                        }
+                        frameAcquired = false; // Reset cờ cho vòng lặp sau
+                    }
                 }
             }
             throw new ScreenDublicatorException(String.Format("Không thể lấy thông tin khung hình. Số lần thử: {0}", this.ATTEMPTS));
@@ -254,7 +273,8 @@ namespace ScreenDublicator
             {
                 if (ex.ResultCode.Failure)
                 {
-                    throw new ScreenDublicatorException("Lỗi khi lấy hình dạng con trỏ chuột");
+                    // Chỉ log, không throw để tránh crash luồng update
+                    Debug.WriteLine("Lỗi khi lấy hình dạng con trỏ chuột");
                 }
             }
 

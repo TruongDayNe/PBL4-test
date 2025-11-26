@@ -12,7 +12,6 @@
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
-
         <Style x:Key="StatLabel" TargetType="TextBlock">
             <Setter Property="FontSize" Value="10"/>
             <Setter Property="Foreground" Value="#94A3B8"/>
@@ -116,10 +115,119 @@
 
                 <Rectangle Style="{StaticResource Separator}"/>
 
-                <StackPanel>
-                    <TextBlock Text="{Binding ClientCount}" Style="{StaticResource StatValue}" Foreground="#38BDF8"/>
-                    <TextBlock Text="Clients" Style="{StaticResource StatLabel}"/>
-                </StackPanel>
+                <ToggleButton x:Name="BtnClients" Background="Transparent" BorderThickness="0" Cursor="Hand" Padding="5,0">
+                    <ToggleButton.Template>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <StackPanel Background="Transparent">
+                                <TextBlock Text="{Binding ClientCount}" Style="{StaticResource StatValue}" Foreground="#38BDF8"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="Clients" Style="{StaticResource StatLabel}"/>
+                                    <TextBlock Text="▼" FontSize="8" Foreground="#94A3B8" Margin="3,2,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </ControlTemplate>
+                    </ToggleButton.Template>
+                </ToggleButton>
+
+                <Popup IsOpen="{Binding IsChecked, ElementName=BtnClients}" StaysOpen="False" PlacementTarget="{Binding ElementName=BtnClients}" Placement="Bottom" VerticalOffset="10" AllowsTransparency="True">
+                    <Border Background="#1E293B" BorderBrush="#334155" BorderThickness="1" CornerRadius="8" Padding="5" MinWidth="200">
+                        <Border.Effect>
+                            <DropShadowEffect ShadowDepth="5" BlurRadius="10" Opacity="0.5"/>
+                        </Border.Effect>
+
+                        <StackPanel>
+                            <TextBlock Text="DANH SÁCH KẾT NỐI" Foreground="#64748B" FontSize="10" FontWeight="Bold" Margin="5,5,5,10"/>
+
+                            <ItemsControl ItemsSource="{Binding ConnectedClients}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#0F172A" CornerRadius="4" Padding="8" Margin="0,0,0,5">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding DisplayName}" Foreground="White" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding ClientIP}" Foreground="#94A3B8" FontSize="11"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+
+                                                    <Button Command="{Binding DataContext.ToggleMuteClientCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+                                                            CommandParameter="{Binding}"
+                                                            Margin="0,0,5,0" Width="30" Height="30" BorderThickness="0" Cursor="Hand"
+                                                            ToolTip="Bật/Tắt Mic">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button">
+                                                                <Setter Property="Background" Value="#334155"/>
+                                                                <Setter Property="Template">
+                                                                    <Setter.Value>
+                                                                        <ControlTemplate TargetType="Button">
+                                                                            <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                            </Border>
+                                                                        </ControlTemplate>
+                                                                    </Setter.Value>
+                                                                </Setter>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsMuted}" Value="True">
+                                                                        <Setter Property="Background" Value="#EF4444"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                        <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="White">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Text" Value="&#xE720;"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsMuted}" Value="True">
+                                                                            <Setter Property="Text" Value="&#xE721;"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </Button>
+
+                                                    <Button Command="{Binding DataContext.KickClientCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+                                                            CommandParameter="{Binding}"
+                                                            Width="30" Height="30" Background="#33EF4444" BorderThickness="0" Cursor="Hand"
+                                                            ToolTip="Đuổi (Kick)">
+                                                        <Button.Template>
+                                                            <ControlTemplate TargetType="Button">
+                                                                <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                                                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#EF4444" 
+                                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                </Border>
+                                                            </ControlTemplate>
+                                                        </Button.Template>
+                                                    </Button>
+
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <TextBlock Text="Chưa có client kết nối" FontStyle="Italic" Foreground="#64748B" HorizontalAlignment="Center" Margin="10">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ClientCount}" Value="0">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+                </Popup>
 
                 <Rectangle Style="{StaticResource Separator}"/>
 
