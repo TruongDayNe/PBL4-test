@@ -6,65 +6,169 @@
         xmlns:local="clr-namespace:WPFUI_NEW"
         xmlns:vm="clr-namespace:WPFUI_NEW.ViewModels"
         xmlns:views="clr-namespace:WPFUI_NEW.Views" 
+        xmlns:converters="clr-namespace:WPFUI_NEW.Converters"
         mc:Ignorable="d"
         Title="Virtual Sofa" Height="720" Width="1080"
         WindowStartupLocation="CenterScreen"
-        Closing="Window_Closing">
+        Closing="Window_Closing"
+        
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        Background="#1E1E1E">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="32"  
+                      GlassFrameThickness="0" 
+                      CornerRadius="0" 
+                      ResizeBorderThickness="5"/>
+    </WindowChrome.WindowChrome>
 
     <Window.DataContext>
         <vm:MainViewModel/>
     </Window.DataContext>
 
+    <Window.Style>
+        <Style TargetType="Window">
+            <Setter Property="WindowState" Value="Normal"/>
+            <Style.Triggers>
+                <!-- Khi chuyển sang Client View -> Tự động Maximize nhưng vẫn cho phép người dùng thay đổi -->
+                <!-- Nếu bạn muốn người dùng tự do resize ngay từ đầu, có thể bỏ Trigger này -->
+                <DataTrigger Binding="{Binding IsClientViewActive}" Value="True">
+                    <Setter Property="WindowState" Value="Maximized"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Style>
+
     <Window.Resources>
         <DataTemplate DataType="{x:Type vm:SelectionViewModel}">
             <views:SelectionView/>
         </DataTemplate>
-
         <DataTemplate DataType="{x:Type vm:ClientConnectViewModel}">
             <views:ClientConnectView/>
         </DataTemplate>
-
         <DataTemplate DataType="{x:Type vm:HostViewModel}">
             <views:HostView/>
         </DataTemplate>
-
         <DataTemplate DataType="{x:Type vm:ClientViewModel}">
             <views:ClientView/>
         </DataTemplate>
+
+        <Style x:Key="NavButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="#AAA"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Background" Value="#33FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <converters:InvertedBooleanToVisibilityConverter x:Key="InvertedBoolToVis"/>
     </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
+            <!-- Row 0: Custom Title Bar (sẽ ẩn khi full screen client, hiện lại khi restore) -->
             <RowDefinition Height="Auto"/>
+            <!-- Row 1: Main Content -->
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <Button Grid.Row="0" 
-                Content="← Quay lại"
-                Command="{Binding ShowSelectionViewCommand}"
-                HorizontalAlignment="Left" 
-                Margin="10,5" 
-                Padding="10,5"
-                Background="Transparent"
-                BorderThickness="0"
-                Foreground="#007ACC"
-                FontSize="14"
-                Cursor="Hand">
-            <Button.Style>
-                <Style TargetType="Button">
-                    <Setter Property="Visibility" Value="Visible"/>
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsSelectionViewActive}" Value="True">
-                            <Setter Property="Visibility" Value="Collapsed"/>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </Button.Style>
-        </Button>
+        <!-- Custom Title Bar -->
+        <!-- HIỆN LẠI TitleBar khi IsClientViewActive = False HOẶC WindowState != Maximized -->
+        <!-- Tuy nhiên để đơn giản hóa theo yêu cầu của bạn: -->
+        <!-- Chúng ta sẽ LUÔN cho phép resize bằng cách kéo cạnh cửa sổ (nhờ WindowChrome ResizeBorderThickness="5") -->
+        <!-- Và TitleBar này chỉ hiện ở các màn hình Menu để kéo thả dễ dàng. -->
+        <!-- Ở màn hình Client, nếu bạn restore (bỏ maximize), bạn vẫn có thể resize bằng cách kéo cạnh. -->
 
-        <ContentControl Grid.Row="1" 
-                        Content="{Binding CurrentViewModel}"
+        <Grid Grid.Row="0" Height="32" Background="#252525" 
+              MouseDown="TitleBar_MouseDown"
+              Visibility="{Binding IsClientViewActive, Converter={StaticResource InvertedBoolToVis}}">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Back Button -->
+            <Button Grid.Column="0"
+                    Content="← Quay lại"
+                    Command="{Binding ShowSelectionViewCommand}">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource NavButton}">
+                        <Setter Property="Visibility" Value="Visible"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsSelectionViewActive}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+
+            <!-- Title -->
+            <TextBlock Grid.Column="1" Text="Virtual Sofa" 
+                       Foreground="#888" VerticalAlignment="Center" HorizontalAlignment="Center"
+                       IsHitTestVisible="False"/>
+
+            <!-- Window Controls -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <Button Content="─" Click="Minimize_Click" Style="{StaticResource NavButton}" ToolTip="Thu nhỏ"/>
+                <Button Content="☐" Click="Maximize_Click" Style="{StaticResource NavButton}" ToolTip="Phóng to/Thu nhỏ"/>
+                <Button Content="✕" Click="CloseApp_Click" Style="{StaticResource NavButton}" Foreground="#FF6B6B" ToolTip="Đóng"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Main Content -->
+        <!-- Khi ở ClientView (IsClientViewActive=True), TitleBar bị ẩn (Collapsed), -->
+        <!-- nên ContentControl sẽ tự động đẩy lên chiếm trọn Row 0 và Row 1 nếu chúng ta bỏ Grid.Row="0" Grid.RowSpan="2" -->
+        <!-- Tuy nhiên, để giữ logic cũ (Client đè lên TitleBar nếu cần): -->
+        <ContentControl Grid.Row="0" Grid.RowSpan="2"
+                        Content="{Binding CurrentViewModel}" 
                         HorizontalContentAlignment="Stretch"
                         VerticalContentAlignment="Stretch"/>
+
+        <!-- Overlay Buttons cho Client Mode (Khi TitleBar bị ẩn) -->
+        <!-- Nút Đóng & Restore/Maximize -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" 
+                    HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Margin="0,10,10,0"
+                    Panel.ZIndex="999"
+                    Visibility="{Binding IsClientViewActive, Converter={StaticResource BoolToVis}}">
+
+            <!-- Nút Restore/Maximize cho Client -->
+            <Button Content="❐" 
+                    Click="Maximize_Click"
+                    Style="{StaticResource NavButton}"
+                    Foreground="#AAA"
+                    ToolTip="Phóng to / Thu nhỏ cửa sổ"
+                    Margin="0,0,5,0"/>
+
+            <!-- Nút Đóng -->
+            <Button Content="✕"
+                    Click="CloseApp_Click"
+                    Style="{StaticResource NavButton}"
+                    Foreground="#FF6B6B"
+                    ToolTip="Đóng ứng dụng"/>
+        </StackPanel>
+
     </Grid>
 </Window>

@@ -20,7 +20,17 @@ namespace RealTimeUdpStream.Core.Audio
         private bool _disposed = false;
         private bool _isStreaming = false;
         private bool _isReceiving = false;
-        
+        private bool _isMuted = false;
+        public bool IsMuted
+        {
+            get => _isMuted;
+            set
+            {
+                _isMuted = value;
+                Debug.WriteLine($"[AudioManager] Microphone Muted: {_isMuted}");
+            }
+        }
+
         // Target endpoint for audio streaming
         private System.Net.IPEndPoint _targetEndPoint;
 
@@ -153,7 +163,7 @@ namespace RealTimeUdpStream.Core.Audio
 
         private void SendAudioPacket(AudioPacket audioPacket)
         {
-            if (!_isStreaming || _disposed || _targetEndPoint == null)
+            if (!_isStreaming || _disposed || _targetEndPoint == null || _isMuted)
             {
                 return;
             }

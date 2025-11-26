@@ -13,6 +13,7 @@ using System.Windows; // Thêm using này cho MessageBox
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using WPFUI_NEW.Services;
+using System.Windows.Automation;
 
 namespace WPFUI_NEW.ViewModels
 {
@@ -27,6 +28,22 @@ namespace WPFUI_NEW.ViewModels
         private AudioManager _audioManager;
         private KeyboardManager _keyboardManager; // Quản lý keyboard (WASD)
         private ViGEmManager _vigemManager; // Quản lý ViGEm controller (IJKL)
+
+        // === CÁC THUỘC TÍNH UI MỚI (Overlay Style) ===
+        [ObservableProperty] private bool _isMenuVisible = true; // Trạng thái thanh Bar
+        [ObservableProperty] private bool _isStatsVisible = false; // Trạng thái bảng Ping/FPS
+        [ObservableProperty] private bool _isMicMuted = false;   // Trạng thái Mic
+
+        // Toast Notification
+        [ObservableProperty] private string _toastMessage = "";
+        [ObservableProperty] private bool _isToastVisible = false;
+        [ObservableProperty] private string _toastKeyHint = ""; // Ví dụ: "Ctrl + M"
+
+        // === COMMANDS MỚI ===
+        public IRelayCommand ToggleMenuCommand { get; }
+        public IRelayCommand ToggleStatsCommand { get; }
+        public IRelayCommand ToggleMicCommand { get; }
+        public IRelayCommand ToggleMouseModeCommand { get; }
 
         // --- Thuộc tính cho Telemetry ---
         [ObservableProperty] private string _pingText = "---";
@@ -47,6 +64,10 @@ namespace WPFUI_NEW.ViewModels
         {
             _networkService = new NetworkService();
             ConnectCommand = new AsyncRelayCommand(ToggleConnectionAsync);
+            ToggleMenuCommand = new RelayCommand(ToggleMenu);
+            ToggleStatsCommand = new RelayCommand(ToggleStats);
+            ToggleMicCommand = new RelayCommand(ToggleMic);
+            ToggleMouseModeCommand = new RelayCommand(ToggleMouseMode);
 
             // Initialize non-nullable fields
             _screenReceiver = null!; // Mark as nullable or initialize properly
@@ -63,6 +84,64 @@ namespace WPFUI_NEW.ViewModels
             };
             _telemetryTimer.Tick += OnTelemetryTick;
         }
+
+        // === LOGIC XỬ LÝ GIAO DIỆN ===
+
+        private void ToggleMenu()
+        {
+            IsMenuVisible = !IsMenuVisible;
+            if (!IsMenuVisible)
+            {
+                ShowToast("Đã ẩn Menu", "Ctrl + M");
+            }
+        }
+
+        private void ToggleStats()
+        {
+            IsStatsVisible = !IsStatsVisible;
+            ShowToast(IsStatsVisible ? "Đã bật Overlay Thông số" : "Đã tắt Overlay Thông số");
+        }
+
+        private void ToggleMic()
+        {
+            if (_audioManager == null)
+            {
+                ShowToast("Chưa kết nối đến Host!");
+                return;
+            }
+
+            IsMicMuted = !IsMicMuted;
+            _audioManager.IsMuted = IsMicMuted; // Cập nhật xuống AudioManager
+            ShowToast(IsMicMuted ? "Đã tắt Microphone" : "Đã bật Microphone");
+        }
+
+        private void ToggleMouseMode()
+        {
+            // TODO: Tích hợp logic khóa chuột thực tế tại đây
+            ShowToast("Chế độ chuột: Chưa hỗ trợ (Demo)");
+        }
+
+        // Hàm hiển thị thông báo tự tắt sau 2.5s
+        private async void ShowToast(string message, string keyHint = "")
+        {
+            ToastMessage = message;
+            ToastKeyHint = keyHint;
+            IsToastVisible = true;
+
+            // Đợi 2.5 giây rồi ẩn (chạy trên thread pool để không block UI)
+            await Task.Delay(2500);
+
+            // Quay lại luồng UI để ẩn
+            App.Current.Dispatcher.Invoke(() =>
+            {
+                // Chỉ ẩn nếu message chưa bị thay đổi bởi toast mới
+                if (ToastMessage == message)
+                {
+                    IsToastVisible = false;
+                }
+            });
+        }
+
         private void HandleControlPacket(UdpPacket packet)
         {
             if (packet.Header.PacketType == (byte)UdpPacketType.Kick)
