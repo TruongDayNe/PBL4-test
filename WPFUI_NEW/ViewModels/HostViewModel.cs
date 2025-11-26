@@ -18,6 +18,8 @@ using System.Windows.Media.Imaging;
 using WPFUI_NEW.Services;
 using System.Collections.ObjectModel;
 using System.Net.Sockets;
+using System.Windows.Threading; 
+using WPFUI_NEW.Views; 
 
 namespace WPFUI_NEW.ViewModels
 {
@@ -61,6 +63,22 @@ namespace WPFUI_NEW.ViewModels
         public IAsyncRelayCommand KickClientCommand { get; }
         public IAsyncRelayCommand StartStreamCommand { get; }
 
+
+        // === CÁC THÀNH PHẦN MỚI CHO OVERLAY ===
+        private HostOverlayWindow _overlayWindow;
+        private DispatcherTimer _statsTimer;
+
+        [ObservableProperty] private bool _isOverlayVisible = true;
+        [ObservableProperty] private string _hostBitrateText = "0.0";
+        [ObservableProperty] private int _clientCount = 0;
+
+        // Toast Notification (Host side)
+        [ObservableProperty] private string _toastMessage = "";
+        [ObservableProperty] private bool _isToastVisible = false;
+        [ObservableProperty] private string _toastKeyHint = "";
+
+        public IRelayCommand ToggleOverlayCommand { get; }
+
         public HostViewModel()
         {
             _networkService = new NetworkService();
@@ -78,6 +96,40 @@ namespace WPFUI_NEW.ViewModels
             KickClientCommand = new AsyncRelayCommand<ConnectedClientViewModel>(KickClientAsync);
 
             LoadHostIp();
+            ToggleOverlayCommand = new RelayCommand(ToggleOverlay);
+
+            // Khởi tạo Timer cập nhật thông số (1s/lần)
+            _statsTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _statsTimer.Tick += OnStatsTick;
+        }
+
+        private void ToggleOverlay()
+        {
+            IsOverlayVisible = !IsOverlayVisible;
+            if (!IsOverlayVisible)
+            {
+                ShowToast("Đã ẩn Dashboard", "Ctrl + H");
+            }
+        }
+
+        private async void ShowToast(string message, string keyHint = "")
+        {
+            ToastMessage = message;
+            ToastKeyHint = keyHint;
+            IsToastVisible = true;
+            await Task.Delay(3000);
+            App.Current.Dispatcher.Invoke(() => IsToastVisible = false);
+        }
+
+        private void OnStatsTick(object sender, EventArgs e)
+        {
+            if (_sharedUdpPeer != null)
+            {
+                var snapshot = _sharedUdpPeer.Stats.GetSnapshot();
+                // Chuyển Kbps sang Mbps
+                HostBitrateText = (snapshot.SentBitrateKbps / 1024.0).ToString("F1");
+                ClientCount = ConnectedClients.Count;
+            }
         }
 
         private void LoadHostIp()
@@ -179,6 +231,14 @@ namespace WPFUI_NEW.ViewModels
                     });
                 }
             });
+
+            // Hiện Toast báo có người kết nối trên Overlay
+            App.Current.Dispatcher.Invoke(() =>
+            {
+                ShowToast($"Yêu cầu kết nối từ: {displayName}");
+                // Nếu đang ẩn overlay thì hiện lại để Host thấy yêu cầu
+                IsOverlayVisible = true;
+            });
         }
 
         private void HandleControlPacket(UdpPacket packet)
@@ -249,6 +309,13 @@ namespace WPFUI_NEW.ViewModels
 
                 PendingClients.Clear();
                 ConnectedClients.Clear();
+
+                _statsTimer.Stop();
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    _overlayWindow?.Close();
+                    _overlayWindow = null;
+                });
             }
             else
             {
@@ -305,6 +372,15 @@ namespace WPFUI_NEW.ViewModels
                     StatusText = "Lỗi";
                     StreamButtonContent = "Bắt đầu Host";
                 }
+
+                // Mở Overlay
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    _overlayWindow = new HostOverlayWindow();
+                    _overlayWindow.DataContext = this; // Bind ViewModel hiện tại vào Overlay
+                    _overlayWindow.Show();
+                });
+                _statsTimer.Start();
             }
         }
 
