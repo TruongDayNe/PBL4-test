@@ -1,7 +1,10 @@
 using Core.Networking;
 using RealTimeUdpStream.Core.Models;
+using RealTimeUdpStream.Core.Util;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
@@ -98,7 +101,33 @@ namespace RealTimeUdpStream.Core.Input
             if (_disposed || !_isClientMode) return;
 
             _isSimulating = true;
-            _keyboardSimulator = new KeyboardSimulator();
+            
+            // Load key mapping from config
+            Console.WriteLine("========================================");
+            Console.WriteLine("[KeyboardManager] Loading config...");
+            Debug.WriteLine("[KeyboardManager] Loading config...");
+            var config = ConfigHelper.GetConfig();
+            Console.WriteLine($"[KeyboardManager] Config loaded. Keyboard mappings: {config.KeyboardMapping.Count}");
+            Debug.WriteLine($"[KeyboardManager] Config loaded. Keyboard mappings: {config.KeyboardMapping.Count}");
+            
+            foreach (var kvp in config.KeyboardMapping)
+            {
+                Console.WriteLine($"[KeyboardManager] Config mapping: {kvp.Key} → {kvp.Value}");
+                Debug.WriteLine($"[KeyboardManager] Config mapping: {kvp.Key} → {kvp.Value}");
+            }
+            
+            var keyMapping = ConvertToVirtualKeyMapping(config.KeyboardMapping);
+            Console.WriteLine($"[KeyboardManager] Converted {keyMapping.Count} mappings to VirtualKey");
+            Debug.WriteLine($"[KeyboardManager] Converted {keyMapping.Count} mappings to VirtualKey");
+            
+            foreach (var kvp in keyMapping)
+            {
+                Console.WriteLine($"[KeyboardManager] VirtualKey mapping: {kvp.Key} → {kvp.Value}");
+                Debug.WriteLine($"[KeyboardManager] VirtualKey mapping: {kvp.Key} → {kvp.Value}");
+            }
+            Console.WriteLine("========================================");
+            
+            _keyboardSimulator = new KeyboardSimulator(keyMapping);
 
             // Subscribe to network events
             _udpPeer.OnPacketReceived += HandleReceivedPacket;
@@ -106,6 +135,51 @@ namespace RealTimeUdpStream.Core.Input
 
             OnStatusChanged?.Invoke("Keyboard simulation started");
             Debug.WriteLine("[KeyboardManager] Keyboard simulation started");
+        }
+        
+        /// <summary>
+        /// Convert string-based mapping to VirtualKey mapping
+        /// </summary>
+        private Dictionary<VirtualKey, VirtualKey> ConvertToVirtualKeyMapping(Dictionary<string, string> stringMapping)
+        {
+            var result = new Dictionary<VirtualKey, VirtualKey>();
+            
+            foreach (var kvp in stringMapping)
+            {
+                // Skip empty or null mappings
+                if (string.IsNullOrWhiteSpace(kvp.Value))
+                {
+                    Debug.WriteLine($"  {kvp.Key} → (skipped - empty mapping)");
+                    continue;
+                }
+                
+                if (TryParseVirtualKey(kvp.Key, out VirtualKey sourceKey) &&
+                    TryParseVirtualKey(kvp.Value, out VirtualKey targetKey))
+                {
+                    result[sourceKey] = targetKey;
+                    Debug.WriteLine($"  {kvp.Key} → {kvp.Value}");
+                }
+                else
+                {
+                    Debug.WriteLine($"⚠️ Invalid key mapping: {kvp.Key} → {kvp.Value}");
+                }
+            }
+            
+            return result;
+        }
+        
+        /// <summary>
+        /// Parse string to VirtualKey enum
+        /// </summary>
+        private bool TryParseVirtualKey(string keyString, out VirtualKey key)
+        {
+            // Try direct enum parse
+            if (Enum.TryParse(keyString, true, out key))
+                return true;
+            
+            // Handle special cases
+            key = (VirtualKey)0;
+            return false;
         }
 
         /// <summary>

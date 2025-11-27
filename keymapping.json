@@ -1,0 +1,92 @@
+{
+  "KeyboardMapping": {
+    "W": "Z",
+    "A": "B",
+    "S": "G",
+    "D": "H",
+    "Q": "",
+    "E": "",
+    "R": "",
+    "T": "",
+    "F": "",
+    "C": "",
+    "V": "",
+    "X": "",
+    "Z": "",
+    "Space": "",
+    "Shift": "",
+    "Ctrl": "",
+    "Alt": "",
+    "Tab": "",
+    "CapsLock": "",
+    "Enter": "",
+    "Back": "",
+    "Escape": "",
+    "D1": "",
+    "D2": "",
+    "D3": "",
+    "D4": "",
+    "D5": "",
+    "D6": "",
+    "D7": "",
+    "D8": "",
+    "D9": "",
+    "D0": "",
+    "F1": "",
+    "F2": "",
+    "F3": "",
+    "F4": "",
+    "F5": "",
+    "F6": "",
+    "F7": "",
+    "F8": "",
+    "F9": "",
+    "F10": "",
+    "F11": "",
+    "F12": "",
+    "Up": "",
+    "Down": "",
+    "Left": "",
+    "Right": ""
+  },
+  "ControllerMapping": {
+    "I": {
+      "Type": "LeftStickUp",
+      "Value": 1.0
+    },
+    "J": {
+      "Type": "LeftStickLeft",
+      "Value": 1.0
+    },
+    "K": {
+      "Type": "LeftStickDown",
+      "Value": 1.0
+    },
+    "L": {
+      "Type": "LeftStickRight",
+      "Value": 1.0
+    },
+    "O": {
+      "Type": "ButtonA",
+      "Value": 1.0
+    },
+    "P": {
+      "Type": "ButtonB",
+      "Value": 1.0
+    },
+    "U": {
+      "Type": "ButtonX",
+      "Value": 1.0
+    },
+    "Y": {
+      "Type": "ButtonY",
+      "Value": 1.0
+    }
+  },
+  "AudioSettings": {
+    "Codec": "OPUS",
+    "Bitrate": 96000,
+    "SampleRate": 48000,
+    "Channels": 2
+  }
+}

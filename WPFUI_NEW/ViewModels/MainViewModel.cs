@@ -1,8 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System;
-using System.Windows.Input;
-using WPFUI_NEW.ViewModels;
+using System.Windows.Input; // Cần cho ICommand
+using WPFUI_NEW.ViewModels; // Đảm bảo using này đúng
+using RealTimeUdpStream.Core.Util; // For ConfigHelper
 
 namespace WPFUI_NEW.ViewModels
 {
@@ -29,7 +30,20 @@ namespace WPFUI_NEW.ViewModels
 
         public MainViewModel()
         {
-            NavigateToClientStreamCommand = new RelayCommand<string>(NavigateToClientStream);
+            // Load key mapping config khi khởi động app
+            try
+            {
+                ConfigHelper.LoadConfig();
+                System.Diagnostics.Debug.WriteLine("✓ Config loaded on app startup");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"⚠️ Failed to load config: {ex.Message}");
+                // Continue anyway with default config
+            }
+
+            // Khởi tạo command điều hướng nội bộ
+            NavigateToClientStreamCommand = new RelayCommand(NavigateToClientStream);
 
             HostViewModel = new HostViewModel();
             ClientViewModel = new ClientViewModel();

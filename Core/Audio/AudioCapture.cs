@@ -20,6 +20,9 @@ namespace RealTimeUdpStream.Core.Audio
         private bool _isCapturing = false;
         private bool _disposed = false;
 
+        // Opus encoder (nullable - only used if codec is OPUS)
+        private OpusEncoder _opusEncoder;
+
         // Standard format cho tất cả audio: 48kHz, 16-bit, stereo
         private static readonly WaveFormat StandardFormat = new WaveFormat(48000, 16, 2);
 
@@ -32,6 +35,18 @@ namespace RealTimeUdpStream.Core.Audio
             
             // Initialize converter to standard format
             _audioConverter = new AudioConverter(StandardFormat);
+            
+            // Initialize Opus encoder if needed
+            if (_config.Codec == AudioCodec.OPUS)
+            {
+                _opusEncoder = new OpusEncoder(
+                    sampleRate: _config.SampleRate,
+                    channels: _config.Channels,
+                    bitrate: _config.OpusBitrate,
+                    application: Concentus.Enums.OpusApplication.OPUS_APPLICATION_AUDIO
+                );
+                Debug.WriteLine($"✓ Opus encoder initialized: {_config.OpusBitrate / 1000} Kbps, complexity {_config.OpusComplexity}");
+            }
             
             InitializeAudioInput(inputType);
         }
@@ -192,6 +207,23 @@ namespace RealTimeUdpStream.Core.Audio
                     // TODO: Add resampling
                 }
                 
+                // Encode to Opus if needed
+                byte[] finalAudioData = audioData;
+                if (_config.Codec == AudioCodec.OPUS && _opusEncoder != null)
+                {
+                    try
+                    {
+                        finalAudioData = _opusEncoder.Encode(audioData);
+                        // Debug.WriteLine($"🎵 Opus encoded: {audioData.Length} → {finalAudioData.Length} bytes ({(float)finalAudioData.Length / audioData.Length * 100:F1}%)");
+                    }
+                    catch (Exception encEx)
+                    {
+                        Debug.WriteLine($"❌ Opus encoding failed: {encEx.Message}");
+                        // Fall back to PCM
+                        finalAudioData = audioData;
+                    }
+                }
+                
                 var header = new AudioPacketHeader
                 {
                     SequenceNumber = GenerateSequenceNumber(),
@@ -200,10 +232,10 @@ namespace RealTimeUdpStream.Core.Audio
                     SampleRate = StandardFormat.SampleRate, // Always 48000Hz after conversion
                     Channels = StandardFormat.Channels,     // Always 2 channels
                     SamplesPerChannel = audioData.Length / (StandardFormat.Channels * (StandardFormat.BitsPerSample / 8)),
-                    DataLength = (ushort)audioData.Length
+                    DataLength = (ushort)finalAudioData.Length // Length of encoded data
                 };
 
-                var packet = new AudioPacket(header, new ArraySegment<byte>(audioData));
+                var packet = new AudioPacket(header, new ArraySegment<byte>(finalAudioData));
                 OnAudioDataAvailable?.Invoke(packet);
             }
             catch (Exception ex)
@@ -238,6 +270,7 @@ namespace RealTimeUdpStream.Core.Audio
             StopCapture();
             _waveIn?.Dispose();
             _audioConverter?.Dispose();
+            _opusEncoder?.Dispose();
             _disposed = true;
 
             Debug.WriteLine("AudioCapture disposed");

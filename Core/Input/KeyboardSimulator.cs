@@ -26,17 +26,33 @@ namespace RealTimeUdpStream.Core.Input
 
         public KeyboardSimulator(Dictionary<VirtualKey, VirtualKey> keyMapping = null)
         {
-            // Ánh xạ mặc định: WASD (Client) -> YGHJ (Host)
-            _keyMapping = keyMapping ?? new Dictionary<VirtualKey, VirtualKey>
+            if (keyMapping == null)
             {
-                { VirtualKey.W, VirtualKey.T },
-                { VirtualKey.A, VirtualKey.F },
-                { VirtualKey.S, VirtualKey.G },
-                { VirtualKey.D, VirtualKey.H },
-                { VirtualKey.Space, VirtualKey.Space },
-                { VirtualKey.Shift, VirtualKey.Shift },
-                { VirtualKey.Ctrl, VirtualKey.Ctrl }
-            };
+                // Ánh xạ mặc định: WASD (Client) -> TFGH (Host)
+                _keyMapping = new Dictionary<VirtualKey, VirtualKey>
+                {
+                    { VirtualKey.W, VirtualKey.T },
+                    { VirtualKey.A, VirtualKey.F },
+                    { VirtualKey.S, VirtualKey.G },
+                    { VirtualKey.D, VirtualKey.H },
+                    { VirtualKey.Space, VirtualKey.Space },
+                    { VirtualKey.Shift, VirtualKey.Shift },
+                    { VirtualKey.Ctrl, VirtualKey.Ctrl }
+                };
+                Console.WriteLine("[KeyboardSimulator] Using DEFAULT key mapping (no config provided)");
+                Debug.WriteLine("[KeyboardSimulator] Using DEFAULT key mapping (no config provided)");
+            }
+            else
+            {
+                _keyMapping = keyMapping;
+                Console.WriteLine($"[KeyboardSimulator] Using CUSTOM key mapping ({keyMapping.Count} mappings)");
+                Debug.WriteLine($"[KeyboardSimulator] Using CUSTOM key mapping ({keyMapping.Count} mappings)");
+                foreach (var kvp in _keyMapping)
+                {
+                    Console.WriteLine($"  {kvp.Key} → {kvp.Value}");
+                    Debug.WriteLine($"  {kvp.Key} → {kvp.Value}");
+                }
+            }
         }
 
         public void SimulateKeyEvent(KeyEvent keyEvent)
@@ -50,16 +66,19 @@ namespace RealTimeUdpStream.Core.Input
                     ? _keyMapping[keyEvent.Key]
                     : keyEvent.Key;
 
+                Console.WriteLine($"[KeyboardSimulator] Mapping: {keyEvent.Key} -> {targetKey} (Action: {keyEvent.Action})");
+                
                 if (keyEvent.Action == KeyAction.Down)
                 {
                     KeyDown(targetKey);
+                    Console.WriteLine($"[KeyboardSimulator] ✓ Pressed: {targetKey}");
                 }
                 else
                 {
                     KeyUp(targetKey);
+                    Console.WriteLine($"[KeyboardSimulator] ✓ Released: {targetKey}");
                 }
 
-                Console.WriteLine($"[KeyboardSimulator] Gia lap phim: {keyEvent.Key} -> {targetKey} {keyEvent.Action}");
                 Debug.WriteLine($"[KeyboardSimulator] Simulated {targetKey} {keyEvent.Action}");
             }
             catch (Exception ex)

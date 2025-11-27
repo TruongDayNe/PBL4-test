@@ -40,7 +40,7 @@ namespace WPFUI_NEW.Services
             _screenProcessor = processor;
 
             _encoderParams = new EncoderParameters(1);
-            _encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 50L);
+            _encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 36L);
         }
 
         public void AddClient(IPEndPoint clientEndPoint)

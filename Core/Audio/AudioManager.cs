@@ -54,17 +54,20 @@ namespace RealTimeUdpStream.Core.Audio
         // Packet types for audio
         private const byte AUDIO_PACKET_TYPE = 0x11; // Phải khớp với UdpPacketType.Audio
 
+        private readonly int _delayMs; // Delay duration in milliseconds
+
         public event Action<string> OnStatusChanged;
         public event Action<Exception> OnError;
 
-        public AudioManager(UdpPeer udpPeer, AudioConfig config = null, bool isClientMode = false)
+        public AudioManager(UdpPeer udpPeer, AudioConfig config = null, bool isClientMode = false, int delayMs = 3000)
         {
             _udpPeer = udpPeer ?? throw new ArgumentNullException(nameof(udpPeer));
             _config = config ?? AudioConfig.CreateDefault();
             _isClientMode = isClientMode;
+            _delayMs = delayMs;
 
             Debug.WriteLine($"=== AudioManager Constructor === Instance={GetHashCode()}");
-            Debug.WriteLine($"Mode: {(_isClientMode ? "CLIENT (with delay)" : "HOST (no delay)")}");
+            Debug.WriteLine($"Mode: {(_isClientMode ? "CLIENT (with delay)" : "HOST (no delay)")}, Delay: {_delayMs}ms");
 
             InitializeComponents();
             SubscribeToNetworkEvents();
@@ -79,10 +82,10 @@ namespace RealTimeUdpStream.Core.Audio
 
         private void InitializeComponents()
         {
-            // CLIENT mode: có delay 3 giây để dễ phân biệt
+            // CLIENT mode: có delay configurable
             // HOST mode: không delay, phát ngay
-            _audioPlayback = new AudioPlayback(_config, enableDelay: _isClientMode, delayMs: 3000);
-            Debug.WriteLine($"AudioManager initialized - Mode: {(_isClientMode ? "CLIENT (3s delay)" : "HOST (no delay)")}");
+            _audioPlayback = new AudioPlayback(_config, enableDelay: _isClientMode, delayMs: _delayMs);
+            Debug.WriteLine($"AudioManager initialized - Mode: {(_isClientMode ? $"CLIENT ({_delayMs}ms delay)" : "HOST (no delay)")}");
         }
 
         private void SubscribeToNetworkEvents()
