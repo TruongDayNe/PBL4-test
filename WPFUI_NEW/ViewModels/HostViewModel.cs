@@ -439,7 +439,7 @@ namespace WPFUI_NEW.ViewModels
                     if (_screenProcessor == null) _screenProcessor = ScreenProcessor.Instance;
 
                     _audioManager = new AudioManager(_sharedUdpPeer, AudioConfig.CreateDefault(), false);
-                    _audioManager.StartAudioStreaming(AudioInputType.SystemAudio);
+                    _audioManager.StartAudioStreaming(AudioInputType.Microphone);
 
                     _keyboardManager = new KeyboardManager(_sharedUdpPeer, true);
                     _keyboardManager.StartSimulation();
