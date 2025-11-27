@@ -43,7 +43,7 @@ namespace WPFUI_NEW.ViewModels
             }
 
             // Khởi tạo command điều hướng nội bộ
-            NavigateToClientStreamCommand = new RelayCommand(NavigateToClientStream);
+            NavigateToClientStreamCommand = new RelayCommand<string>(NavigateToClientStream);
 
             HostViewModel = new HostViewModel();
             ClientViewModel = new ClientViewModel();
