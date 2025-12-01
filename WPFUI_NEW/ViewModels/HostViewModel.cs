@@ -441,10 +441,10 @@ namespace WPFUI_NEW.ViewModels
                     _audioManager = new AudioManager(_sharedUdpPeer, AudioConfig.CreateDefault(), false);
                     _audioManager.StartAudioStreaming(AudioInputType.SystemAudio);
 
-                    _keyboardManager = new KeyboardManager(_sharedUdpPeer, true);
+                    _keyboardManager = new KeyboardManager(_sharedUdpPeer, isClientMode: false); // HOST simulate phím
                     _keyboardManager.StartSimulation();
 
-                    _vigemManager = new ViGEmManager(_sharedUdpPeer, false);
+                    _vigemManager = new ViGEmManager(_sharedUdpPeer, isClientMode: true); // HOST simulate controller
                     _vigemManager.StartSimulation();
                     if (_audioManager != null)
                     {

@@ -13,6 +13,13 @@ namespace RealTimeUdpStream.Core.Util
     public static class ConfigHelper
     {
         private static KeyMappingConfig _currentConfig;
+        private static FileSystemWatcher _configWatcher;
+        private static string _watchedConfigPath;
+        
+        /// <summary>
+        /// Event fired khi config file thay đổi
+        /// </summary>
+        public static event Action OnConfigChanged;
 
         /// <summary>
         /// Load config từ file (hoặc tạo mới nếu chưa có)
@@ -40,6 +47,12 @@ namespace RealTimeUdpStream.Core.Util
                     Debug.WriteLine("⚠️ Config validation failed, using anyway");
                 }
 
+                // Setup file watcher nếu chưa có
+                if (_configWatcher == null || _watchedConfigPath != configPath)
+                {
+                    SetupFileWatcher(configPath);
+                }
+
                 return _currentConfig;
             }
             catch (Exception ex)
@@ -60,6 +73,63 @@ namespace RealTimeUdpStream.Core.Util
                 Console.WriteLine("Using default config...");
                 _currentConfig = KeyMappingConfig.CreateDefault();
                 return _currentConfig;
+            }
+        }
+
+        /// <summary>
+        /// Setup FileSystemWatcher để tự động reload config khi file thay đổi
+        /// </summary>
+        private static void SetupFileWatcher(string configPath)
+        {
+            try
+            {
+                // Dispose watcher cũ nếu có
+                _configWatcher?.Dispose();
+
+                var directory = Path.GetDirectoryName(configPath);
+                var fileName = Path.GetFileName(configPath);
+
+                _configWatcher = new FileSystemWatcher(directory, fileName)
+                {
+                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size,
+                    EnableRaisingEvents = true
+                };
+
+                _configWatcher.Changed += OnConfigFileChanged;
+                _watchedConfigPath = configPath;
+
+                Console.WriteLine($"🔍 Watching config file: {configPath}");
+                Debug.WriteLine($"🔍 File watcher setup for: {configPath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠️ Failed to setup file watcher: {ex.Message}");
+                Debug.WriteLine($"⚠️ Failed to setup file watcher: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handler khi config file thay đổi
+        /// </summary>
+        private static void OnConfigFileChanged(object sender, FileSystemEventArgs e)
+        {
+            try
+            {
+                // Đợi 100ms để file được ghi xong
+                System.Threading.Thread.Sleep(100);
+
+                Console.WriteLine($"🔄 Config file changed, reloading: {e.FullPath}");
+                Debug.WriteLine($"🔄 Config file changed, reloading...");
+
+                ReloadConfig();
+
+                // Trigger event để các component khác biết config đã đổi
+                OnConfigChanged?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error reloading config: {ex.Message}");
+                Debug.WriteLine($"❌ Error reloading config: {ex.Message}");
             }
         }
 

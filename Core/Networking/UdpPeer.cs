@@ -80,17 +80,22 @@ namespace Core.Networking
         /// </summary>
         public async Task StartReceivingAsync()
         {
+            Console.WriteLine($"[UdpPeer] StartReceivingAsync started on port {LocalPort}");
+            Debug.WriteLine($"[UdpPeer] StartReceivingAsync started on port {LocalPort}");
+            
             var token = _cancellationTokenSource.Token;
             try
             {
                 while (!token.IsCancellationRequested)
                 {
                     var receiveResult = await _udpClient.ReceiveAsync();
+                    Console.WriteLine($"[UdpPeer] Received packet from {receiveResult.RemoteEndPoint}, Size: {receiveResult.Buffer.Length}");
                     ProcessReceivedPacket(receiveResult.Buffer, receiveResult.RemoteEndPoint);
                 }
             }
             catch (Exception ex) when (ex is OperationCanceledException || ex is SocketException)
             {
+                Console.WriteLine($"[UdpPeer] StartReceivingAsync stopped: {ex.Message}");
                 // Bỏ qua lỗi khi đóng socket hoặc hủy task, đây là hành vi mong muốn khi dừng lại.
             }
         }
@@ -102,9 +107,11 @@ namespace Core.Networking
         {
             if (!_packetParser.TryReadHeader(buffer, out var header) || !_packetParser.IsChecksumValid(buffer))
             {
+                Console.WriteLine($"[UdpPeer] Invalid packet from {source} - checksum failed or header corrupt");
                 return; // Bỏ qua gói tin hỏng hoặc không hợp lệ
             }
 
+            Console.WriteLine($"[UdpPeer] Valid packet - Type: 0x{header.PacketType:X2} ({(UdpPacketType)header.PacketType}), Seq: {header.SequenceNumber}, Size: {buffer.Length}");
             Debug.WriteLine($"[UdpPeer.ProcessReceivedPacket] Received PacketType: {(UdpPacketType)header.PacketType} | Seq: {header.SequenceNumber}");
             _networkStats.LogPacketReceived(buffer.Length);
 
