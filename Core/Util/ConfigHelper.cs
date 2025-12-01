@@ -86,20 +86,28 @@ namespace RealTimeUdpStream.Core.Util
                 // Dispose watcher cũ nếu có
                 _configWatcher?.Dispose();
 
-                var directory = Path.GetDirectoryName(configPath);
-                var fileName = Path.GetFileName(configPath);
+                // Tìm file gốc trong project root (không phải file copy trong bin)
+                var projectRootFile = FindProjectRootConfigFile(configPath);
+                var watchPath = projectRootFile ?? configPath;
+
+                var directory = Path.GetDirectoryName(watchPath);
+                var fileName = Path.GetFileName(watchPath);
 
                 _configWatcher = new FileSystemWatcher(directory, fileName)
                 {
-                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size,
+                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.CreationTime,
                     EnableRaisingEvents = true
                 };
 
                 _configWatcher.Changed += OnConfigFileChanged;
-                _watchedConfigPath = configPath;
+                _watchedConfigPath = watchPath;
 
-                Console.WriteLine($"🔍 Watching config file: {configPath}");
-                Debug.WriteLine($"🔍 File watcher setup for: {configPath}");
+                Console.WriteLine($"🔍 Watching config file: {watchPath}");
+                if (projectRootFile != null && projectRootFile != configPath)
+                {
+                    Console.WriteLine($"   (Project root file, will copy to: {configPath})");
+                }
+                Debug.WriteLine($"🔍 File watcher setup for: {watchPath}");
             }
             catch (Exception ex)
             {
@@ -109,22 +117,62 @@ namespace RealTimeUdpStream.Core.Util
         }
 
         /// <summary>
+        /// Tìm file config trong project root
+        /// </summary>
+        private static string FindProjectRootConfigFile(string binConfigPath)
+        {
+            try
+            {
+                // Nếu file hiện tại trong bin/Debug, tìm file gốc trong project root
+                var currentDir = Path.GetDirectoryName(binConfigPath);
+                
+                // Navigate up từ bin/Debug/net8.0-windows đến project root
+                var projectRoot = currentDir;
+                for (int i = 0; i < 5; i++) // Tối đa 5 levels up
+                {
+                    var parentDir = Directory.GetParent(projectRoot);
+                    if (parentDir == null) break;
+                    
+                    projectRoot = parentDir.FullName;
+                    var candidatePath = Path.Combine(projectRoot, "keymapping.json");
+                    
+                    if (File.Exists(candidatePath))
+                    {
+                        Console.WriteLine($"[ConfigHelper] Found project root config: {candidatePath}");
+                        return candidatePath;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ConfigHelper] Error finding project root: {ex.Message}");
+            }
+            
+            return null;
+        }
+
+        /// <summary>
         /// Handler khi config file thay đổi
         /// </summary>
         private static void OnConfigFileChanged(object sender, FileSystemEventArgs e)
         {
             try
             {
-                // Đợi 100ms để file được ghi xong
-                System.Threading.Thread.Sleep(100);
+                // Đợi 200ms để file được ghi xong (tăng từ 100ms để chắc chắn)
+                System.Threading.Thread.Sleep(200);
 
                 Console.WriteLine($"🔄 Config file changed, reloading: {e.FullPath}");
                 Debug.WriteLine($"🔄 Config file changed, reloading...");
 
-                ReloadConfig();
+                // Reload config từ file gốc
+                _currentConfig = KeyMappingConfig.LoadFromFile(_watchedConfigPath);
+                Console.WriteLine($"✓ Config reloaded from: {_watchedConfigPath}");
+                Console.WriteLine(_currentConfig.ToReadableString());
 
                 // Trigger event để các component khác biết config đã đổi
                 OnConfigChanged?.Invoke();
+                
+                Console.WriteLine($"✓ Config change event fired to {OnConfigChanged?.GetInvocationList().Length ?? 0} subscribers");
             }
             catch (Exception ex)
             {
