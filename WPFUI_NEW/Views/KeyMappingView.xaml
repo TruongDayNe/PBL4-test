@@ -1,0 +1,237 @@
+<UserControl x:Class="WPFUI_NEW.Views.KeyMappingView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:vm="clr-namespace:WPFUI_NEW.ViewModels"
+             mc:Ignorable="d" 
+             d:DesignHeight="720" d:DesignWidth="1080"
+             d:DataContext="{d:DesignInstance vm:KeyMappingViewModel, IsDesignTimeCreatable=True}">
+
+    <UserControl.Resources>
+        <!-- Tab Button Style -->
+        <Style x:Key="TabButton" TargetType="Button">
+            <Setter Property="Width" Value="150"/>
+            <Setter Property="Height" Value="45"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Background" Value="#E0E0E0"/>
+            <Setter Property="BorderBrush" Value="#CCCCCC"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#666666"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#D0D0D0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=Tag}" Value="Active">
+                    <Setter Property="Background" Value="White"/>
+                    <Setter Property="Foreground" Value="#333333"/>
+                    <Setter Property="BorderThickness" Value="1,1,1,0"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Sidebar Button Style -->
+        <Style x:Key="SidebarButton" TargetType="Button">
+            <Setter Property="Height" Value="45"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Background" Value="#C0C0C0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="15,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                            VerticalAlignment="Center"
+                                            Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#B0B0B0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=Tag}" Value="Active">
+                    <Setter Property="Background" Value="White"/>
+                    <Setter Property="Foreground" Value="#000000"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Key Icon Style -->
+        <Style x:Key="KeyIcon" TargetType="Border">
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Background" Value="#2C3E50"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Margin" Value="0,0,10,0"/>
+        </Style>
+
+        <!-- Key Input Box Style -->
+        <Style x:Key="KeyInputBox" TargetType="TextBox">
+            <Setter Property="Width" Value="80"/>
+            <Setter Property="Height" Value="35"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="BorderBrush" Value="#CCCCCC"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <!-- Action Button Style -->
+        <Style x:Key="ActionButton" TargetType="Button">
+            <Setter Property="Width" Value="120"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Background" Value="#2C3E50"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#34495e"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#1a252f"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Background="White">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top Tabs -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0">
+            <Button Content="CONTROLLER" Style="{StaticResource TabButton}" IsEnabled="False" Opacity="0.5"/>
+            <Button Content="KEYBOARD" Style="{StaticResource TabButton}" Tag="Active"/>
+        </StackPanel>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1" Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Sidebar -->
+            <Border Grid.Column="0" Background="#E8E8E8" BorderBrush="#CCCCCC" BorderThickness="0,0,1,0">
+                <StackPanel>
+                    <TextBlock Text="SETTINGS" FontSize="16" FontWeight="Bold" Margin="15,20,15,10" Foreground="#333"/>
+                    <Button Content="Common Keys" 
+                            Style="{StaticResource SidebarButton}"
+                            Tag="{Binding IsCommonKeysActive}"
+                            Command="{Binding ShowCommonKeysCommand}"/>
+                    <Button Content="Advanced Keys" 
+                            Style="{StaticResource SidebarButton}"
+                            Tag="{Binding IsAdvancedKeysActive}"
+                            Command="{Binding ShowAdvancedKeysCommand}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Key Mapping Area -->
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="20">
+                <ItemsControl ItemsSource="{Binding CurrentKeyMappings}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="3" HorizontalAlignment="Left"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="10">
+                                <!-- Key Icon -->
+                                <Border Style="{StaticResource KeyIcon}">
+                                    <TextBlock Text="{Binding KeyLabel}" 
+                                             FontSize="14" 
+                                             FontWeight="Bold"
+                                             Foreground="White"
+                                             HorizontalAlignment="Center"
+                                             VerticalAlignment="Center"/>
+                                </Border>
+
+                                <!-- Key Name -->
+                                <TextBlock Text="{Binding KeyName}" 
+                                         FontSize="14"
+                                         VerticalAlignment="Center"
+                                         Width="120"
+                                         Margin="0,0,10,0"/>
+
+                                <!-- Input Box -->
+                                <TextBox Style="{StaticResource KeyInputBox}"
+                                       Text="{Binding MappedKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                       PreviewKeyDown="KeyInputBox_PreviewKeyDown"
+                                       GotFocus="KeyInputBox_GotFocus"
+                                       Tag="{Binding}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" 
+                BorderBrush="#CCCCCC" 
+                BorderThickness="0,1,0,0"
+                Background="#F5F5F5"
+                Padding="20">
+            <Grid>
+                <TextBlock Text="Create a custom keyboard scheme" 
+                         FontSize="16"
+                         VerticalAlignment="Center"
+                         Foreground="#666"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="⌨ Confirm" 
+                            Style="{StaticResource ActionButton}"
+                            Command="{Binding ConfirmCommand}"
+                            Margin="0,0,10,0"/>
+                    <Button Content="⌫ Back" 
+                            Style="{StaticResource ActionButton}"
+                            Background="#7F8C8D"
+                            Command="{Binding BackToMenuCommand}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

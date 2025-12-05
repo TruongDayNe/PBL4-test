@@ -53,6 +53,9 @@
         <DataTemplate DataType="{x:Type vm:ClientViewModel}">
             <views:ClientView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:KeyMappingViewModel}">
+            <views:KeyMappingView/>
+        </DataTemplate>
 
         <Style x:Key="NavButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>

@@ -12,11 +12,13 @@ namespace WPFUI_NEW.ViewModels
         // Các Command này sẽ được "truyền" vào từ MainViewModel
         public ICommand ShowHostViewCommand { get; }
         public ICommand ShowClientViewCommand { get; }
+        public ICommand ShowKeyMappingViewCommand { get; }
 
-        public SelectionViewModel(ICommand showHost, ICommand showClient)
+        public SelectionViewModel(ICommand showHost, ICommand showClient, ICommand showKeyMapping)
         {
             ShowHostViewCommand = showHost;
             ShowClientViewCommand = showClient;
+            ShowKeyMappingViewCommand = showKeyMapping;
         }
 
         // Constructor rỗng cho designer XAML

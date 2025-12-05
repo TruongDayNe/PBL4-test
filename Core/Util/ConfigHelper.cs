@@ -22,6 +22,26 @@ namespace RealTimeUdpStream.Core.Util
         public static event Action OnConfigChanged;
 
         /// <summary>
+        /// Get current loaded config
+        /// </summary>
+        public static KeyMappingConfig CurrentConfig => _currentConfig;
+
+        /// <summary>
+        /// Get path to project root config file (not bin copy)
+        /// </summary>
+        public static string GetProjectRootConfigPath()
+        {
+            string binPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "keymapping.json");
+            string projectRootPath = FindProjectRootConfigFile(binPath);
+            
+            if (projectRootPath != null)
+                return projectRootPath;
+            
+            // Fallback to bin path
+            return binPath;
+        }
+
+        /// <summary>
         /// Load config từ file (hoặc tạo mới nếu chưa có)
         /// </summary>
         public static KeyMappingConfig LoadConfig(string configPath = null)
