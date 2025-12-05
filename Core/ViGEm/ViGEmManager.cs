@@ -293,28 +293,18 @@ namespace RealTimeUdpStream.Core.ViGEm
             bool isPressed = (keyEvent.Action == KeyAction.Down);
             Console.WriteLine($"[ViGEmManager] isPressed: {isPressed}");
 
-            switch (keyEvent.Key)
+            // Sử dụng config mapping thay vì hardcode
+            var keyName = keyEvent.Key.ToString();
+            if (ConfigHelper.CurrentConfig?.ControllerMapping?.TryGetValue(keyName, out var controllerAction) == true)
             {
-                case VirtualKey.I:
-                    _vigemController.SetIPressedState(isPressed);
-                    Console.WriteLine($"[ViGEmManager] I key {(isPressed ? "PRESSED" : "RELEASED")} - Joystick UP");
-                    break;
-                case VirtualKey.K:
-                    _vigemController.SetKPressedState(isPressed);
-                    Console.WriteLine($"[ViGEmManager] K key {(isPressed ? "PRESSED" : "RELEASED")} - Joystick DOWN");
-                    break;
-                case VirtualKey.J:
-                    _vigemController.SetJPressedState(isPressed);
-                    Console.WriteLine($"[ViGEmManager] J key {(isPressed ? "PRESSED" : "RELEASED")} - Joystick LEFT");
-                    break;
-                case VirtualKey.L:
-                    _vigemController.SetLPressedState(isPressed);
-                    Console.WriteLine($"[ViGEmManager] L key {(isPressed ? "PRESSED" : "RELEASED")} - Joystick RIGHT");
-                    break;
-                case VirtualKey.O:
-                    _vigemController.SetOPressedState(isPressed);
-                    Console.WriteLine($"[ViGEmManager] O key {(isPressed ? "PRESSED" : "RELEASED")} - Button A");
-                    break;
+                // ControllerAction có Type và Value
+                _vigemController.SetActionState(controllerAction.Type, isPressed, controllerAction.Value);
+                Console.WriteLine($"[ViGEmManager] {keyName} key {(isPressed ? "PRESSED" : "RELEASED")} -> {controllerAction.Type}");
+            }
+            else
+            {
+                // Key không có mapping trong config - bỏ qua
+                // Console.WriteLine($"[ViGEmManager] No controller mapping for key: {keyName}");
             }
         }
 
