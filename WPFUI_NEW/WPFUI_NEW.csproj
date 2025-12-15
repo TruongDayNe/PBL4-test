@@ -9,6 +9,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="assets\logo.png" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 		<PackageReference Include="Concentus" Version="2.2.2" />
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
@@ -59,7 +63,9 @@
 		</None>
 	</ItemGroup>
 	<ItemGroup>
-	  <Folder Include="Assets\" />
+	  <Resource Include="assets\logo.png">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </Resource>
 	</ItemGroup>
 
 	<!-- Post-build: Copy .NET Framework 4.8 DLLs to fix System.Text.Json version conflict -->

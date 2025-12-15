@@ -118,15 +118,14 @@
                         BorderThickness="3"
                         CornerRadius="20"
                         HorizontalAlignment="Center">
+                    <Image Source="/assets/logo.png"
+                        Margin="10" Stretch="Fill"/>
                     <Border.Effect>
                         <DropShadowEffect Color="#667eea" 
                                           BlurRadius="20" 
                                           ShadowDepth="0" 
                                           Opacity="0.3"/>
                     </Border.Effect>
-
-                    <Image Source="/Assets/logo.png"
-                           Margin="10" Stretch="Fill"/>
                 </Border>
 
                 <!-- Title -->
@@ -153,7 +152,7 @@
                 <!-- Host & Client Buttons -->
                 <StackPanel Orientation="Horizontal" 
                             HorizontalAlignment="Center"
-                            Margin="0,0,0,20">
+                            Margin="0,0,0,0">
                     <Button Content="🎮 Host" 
                             Style="{StaticResource SelectionButton}"
                             Command="{Binding ShowHostViewCommand}"/>
@@ -161,7 +160,7 @@
                     <Button Content="📺 Client" 
                             Style="{StaticResource SelectionButton}"
                             Command="{Binding ShowClientViewCommand}"
-                            Margin="20,0,0,0"/>
+                            Margin="0,0,0,0"/>
                 </StackPanel>
 
                 <!-- Key Mapping Button -->
