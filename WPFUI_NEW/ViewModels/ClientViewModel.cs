@@ -3,17 +3,18 @@ using CommunityToolkit.Mvvm.Input;
 using Core.Networking;
 using RealTimeUdpStream.Core.Audio;
 using RealTimeUdpStream.Core.Input;
-using RealTimeUdpStream.Core.ViGEm; // Add ViGEm namespace
 using RealTimeUdpStream.Core.Models; // Thêm using cho TelemetrySnapshot
 using RealTimeUdpStream.Core.Networking; // Thêm using cho NetworkStats
+using RealTimeUdpStream.Core.ViGEm; // Add ViGEm namespace
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows; // Thêm using này cho MessageBox
+using System.Windows.Automation;
+using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using WPFUI_NEW.Services;
-using System.Windows.Automation;
 
 namespace WPFUI_NEW.ViewModels
 {
@@ -59,9 +60,17 @@ namespace WPFUI_NEW.ViewModels
         [ObservableProperty] private int clientPort = 12001; // Replace _clientPort with generated property
 
         public IAsyncRelayCommand ConnectCommand { get; }
+        public ICommand BackToMenuCommand { get; }
 
-        public ClientViewModel()
+        // Sửa Constructor
+        public ClientViewModel(ICommand backToMenuCommand)
         {
+            // Logic quay về: Cleanup -> Chuyển View
+            BackToMenuCommand = new RelayCommand(() =>
+            {
+                Cleanup(); // Ngắt kết nối UDP, dừng receiver
+                backToMenuCommand.Execute(null);
+            });
             _networkService = new NetworkService();
             ConnectCommand = new AsyncRelayCommand(ToggleConnectionAsync);
             ToggleMenuCommand = new RelayCommand(ToggleMenu);

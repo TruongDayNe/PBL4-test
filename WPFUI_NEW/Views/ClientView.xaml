@@ -199,32 +199,18 @@
                     </Path.RenderTransform>
                 </Path>
 
+                <Button Style="{StaticResource BarButton}" 
+                    ToolTip="Quay về Menu chính" 
+                    Command="{Binding BackToMenuCommand}"
+                    Margin="0,0,5,0">   
+                    <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" FontSize="20"/>
+                </Button>
                 <!-- 1. Stats Toggle Button -->
                 <Button Style="{StaticResource BarButton}" 
                         ToolTip="Thông số (Ping/FPS)" 
                         Command="{Binding ToggleStatsCommand}">
                     <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" FontSize="20"/>
                 </Button>
-
-                <!-- 2. Mic Toggle Button -->
-                <Button Style="{StaticResource BarButton}" 
-                        ToolTip="Bật/Tắt Mic" 
-                        Command="{Binding ToggleMicCommand}" Margin="5,0,0,0">
-                    <Grid>
-                        <!-- Icon Mic Mở -->
-                        <TextBlock Text="&#xE720;" FontFamily="Segoe MDL2 Assets" FontSize="20" Style="{StaticResource MicOnIcon}"/>
-                        <!-- Icon Mic Tắt (Màu đỏ) -->
-                        <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="20" Style="{StaticResource MicOffIcon}"/>
-                    </Grid>
-                </Button>
-
-                <!-- 3. Mouse Mode (Placeholder) -->
-                <Button Style="{StaticResource BarButton}" 
-                        ToolTip="Chế độ chuột (Game/Desktop)" 
-                        Command="{Binding ToggleMouseModeCommand}" Margin="5,0,0,0">
-                    <TextBlock Text="&#xE962;" FontFamily="Segoe MDL2 Assets" FontSize="20"/>
-                </Button>
-
 
                 <!-- Divider -->
                 <Rectangle Width="1" Height="24" Fill="#444" Margin="15,0"/>

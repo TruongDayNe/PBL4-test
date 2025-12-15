@@ -46,16 +46,24 @@ namespace WPFUI_NEW.ViewModels
 
             // Khởi tạo command điều hướng nội bộ
             NavigateToClientStreamCommand = new RelayCommand<string>(NavigateToClientStream);
-            HostViewModel = new HostViewModel();
-            ClientViewModel = new ClientViewModel();
-            ClientConnectViewModel = new ClientConnectViewModel(NavigateToClientStream);
+            //HostViewModel = new HostViewModel();
+            //ClientViewModel = new ClientViewModel();
+            //ClientConnectViewModel = new ClientConnectViewModel(NavigateToClientStream);
 
             ShowHostViewCommand = new RelayCommand(ShowHostView);
             ShowClientViewCommand = new RelayCommand(ShowClientConnectView);
             ShowSelectionViewCommand = new RelayCommand(ShowSelectionView);
             ShowKeyMappingViewCommand = new RelayCommand(ShowKeyMappingView);
+            NavigateToClientStreamCommand = new RelayCommand<string>(NavigateToClientStream);
+
+            HostViewModel = new HostViewModel(ShowSelectionViewCommand);
+
+            ClientViewModel = new ClientViewModel(ShowSelectionViewCommand);
+
+            ClientConnectViewModel = new ClientConnectViewModel(NavigateToClientStream, ShowSelectionViewCommand);
 
             KeyMappingViewModel = new KeyMappingViewModel(ShowSelectionViewCommand);
+
             SelectionViewModel = new SelectionViewModel(ShowHostViewCommand, ShowClientViewCommand, ShowKeyMappingViewCommand);
 
             CurrentViewModel = SelectionViewModel;
