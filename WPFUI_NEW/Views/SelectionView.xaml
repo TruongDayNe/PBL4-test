@@ -9,85 +9,175 @@
              d:DataContext="{d:DesignInstance vm:SelectionViewModel, IsDesignTimeCreatable=True}">
 
     <UserControl.Resources>
+        <!-- Gradient Background -->
+        <LinearGradientBrush x:Key="BackgroundGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#667eea" Offset="0"/>
+            <GradientStop Color="#764ba2" Offset="1"/>
+        </LinearGradientBrush>
+
+        <!-- Modern Button Style -->
         <Style x:Key="SelectionButton" TargetType="Button">
-            <Setter Property="Width" Value="180"/>
-            <Setter Property="Height" Value="55"/>
-            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="Width" Value="200"/>
+            <Setter Property="Height" Value="60"/>
+            <Setter Property="FontSize" Value="18"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Background" Value="White"/>
-            <Setter Property="BorderBrush" Value="#CCCCCC"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="Foreground" Value="#667eea"/>
+            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="border"
                                 Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="4">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                CornerRadius="12">
+                            <Border.Effect>
+                                <DropShadowEffect Color="#667eea" 
+                                                  BlurRadius="15" 
+                                                  ShadowDepth="0" 
+                                                  Opacity="0.3"/>
+                            </Border.Effect>
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                              VerticalAlignment="Center"
+                                              Margin="0,2,0,0"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#F5F5F5"/>
+                                <Setter TargetName="border" Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#667eea" Offset="0"/>
+                                            <GradientStop Color="#764ba2" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#E0E0E0"/>
-                                <Setter TargetName="border" Property="BorderBrush" Value="#AAAAAA"/>
+                                <Setter TargetName="border" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="border" Property="RenderTransformOrigin" Value="0.5,0.5"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Key Mapping Button Style -->
+        <Style x:Key="KeyMappingButton" TargetType="Button" BasedOn="{StaticResource SelectionButton}">
+            <Setter Property="Width" Value="240"/>
+            <Setter Property="Background">
+                <Setter.Value>
+                    <SolidColorBrush Color="White" Opacity="0.9"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Foreground" Value="#764ba2"/>
+        </Style>
     </UserControl.Resources>
 
-    <Grid Background="White">
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+    <Grid>
+        <Grid.Background>
+            <StaticResource ResourceKey="BackgroundGradient"/>
+        </Grid.Background>
 
-            <Image Source="/etc/logo.png" 
-                   Width="120" 
-                   Height="120" 
-                   RenderOptions.BitmapScalingMode="HighQuality"/>
+        <!-- Decorative Circles -->
+        <Canvas>
+            <Ellipse Width="300" Height="300" 
+                     Canvas.Left="-100" Canvas.Top="-100"
+                     Fill="White" Opacity="0.05"/>
+            <Ellipse Width="200" Height="200" 
+                     Canvas.Right="-50" Canvas.Bottom="-50"
+                     Fill="White" Opacity="0.05"/>
+        </Canvas>
 
-            <TextBlock Text="VIRTUAL SOFA" 
-                       FontSize="28" 
-                       FontWeight="Bold" 
-                       Foreground="#2C3E50"
-                       HorizontalAlignment="Center" 
-                       Margin="0,15,0,5"/>
+        <!-- Main Content Card -->
+        <Border Width="500" 
+                Background="White"
+                CornerRadius="20"
+                Padding="50,40"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center">
+            <Border.Effect>
+                <DropShadowEffect Color="Black" 
+                                  BlurRadius="40" 
+                                  ShadowDepth="0" 
+                                  Opacity="0.2"/>
+            </Border.Effect>
 
-            <TextBlock Text="Game Streaming Tool" 
-                       FontSize="16" 
-                       Foreground="#7F8C8D"
-                       HorizontalAlignment="Center" 
-                       Margin="0,0,0,40"/>
+            <StackPanel>
+                <!-- Logo Placeholder -->
+                <Border Width="240" 
+                        Height="160" 
+                        Background="#FFFFFF"
+                        BorderBrush="#667eea"
+                        BorderThickness="3"
+                        CornerRadius="20"
+                        HorizontalAlignment="Center">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" 
+                                          BlurRadius="20" 
+                                          ShadowDepth="0" 
+                                          Opacity="0.3"/>
+                    </Border.Effect>
 
-            <StackPanel Orientation="Horizontal">
-                <Button Content="Host" 
-                        Style="{StaticResource SelectionButton}"
-                        Command="{Binding ShowHostViewCommand}"/>
+                    <Image Source="/Assets/logo.png"
+                           Margin="10" Stretch="Fill"/>
+                </Border>
 
-                <Button Content="Client" 
-                        Style="{StaticResource SelectionButton}"
-                        Command="{Binding ShowClientViewCommand}"
-                        Margin="20,0,0,0"/>
+                <!-- Title -->
+                <TextBlock Text="VIRTUAL SOFA" 
+                           FontSize="32" 
+                           FontWeight="Bold" 
+                           HorizontalAlignment="Center" 
+                           Margin="0,25,0,5">
+                    <TextBlock.Foreground>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Color="#667eea" Offset="0"/>
+                            <GradientStop Color="#764ba2" Offset="1"/>
+                        </LinearGradientBrush>
+                    </TextBlock.Foreground>
+                </TextBlock>
+
+                <!-- Subtitle -->
+                <TextBlock Text="Game Streaming Tool" 
+                           FontSize="15" 
+                           Foreground="#95A5A6"
+                           HorizontalAlignment="Center" 
+                           Margin="0,0,0,35"/>
+
+                <!-- Host & Client Buttons -->
+                <StackPanel Orientation="Horizontal" 
+                            HorizontalAlignment="Center"
+                            Margin="0,0,0,20">
+                    <Button Content="🎮 Host" 
+                            Style="{StaticResource SelectionButton}"
+                            Command="{Binding ShowHostViewCommand}"/>
+
+                    <Button Content="📺 Client" 
+                            Style="{StaticResource SelectionButton}"
+                            Command="{Binding ShowClientViewCommand}"
+                            Margin="20,0,0,0"/>
+                </StackPanel>
+
+                <!-- Key Mapping Button -->
+                <Button Content="⌨ Key Mapping" 
+                        Style="{StaticResource KeyMappingButton}"
+                        Command="{Binding ShowKeyMappingViewCommand}"
+                        HorizontalAlignment="Center"/>
+
+                <!-- Welcome Text -->
+                <TextBlock Text="Chào mừng! Vui lòng chọn một chế độ." 
+                           FontSize="13" 
+                           Foreground="#95A5A6"
+                           HorizontalAlignment="Center" 
+                           Margin="0,25,0,0"
+                           TextAlignment="Center"/>
             </StackPanel>
-
-            <!-- Key Mapping Button -->
-            <Button Content="⚙️ Key Mapping" 
-                    Style="{StaticResource SelectionButton}"
-                    Command="{Binding ShowKeyMappingViewCommand}"
-                    Margin="0,20,0,0"
-                    Width="220"/>
-
-            <TextBlock Text="Chào mừng! Vui lòng chọn một chế độ." 
-                       FontSize="14" 
-                       Foreground="#95A5A6"
-                       HorizontalAlignment="Center" 
-                       Margin="0,30,0,0"/>
-        </StackPanel>
+        </Border>
     </Grid>
 </UserControl>
