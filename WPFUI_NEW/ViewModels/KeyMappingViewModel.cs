@@ -13,6 +13,16 @@ namespace WPFUI_NEW.ViewModels
     {
         public ICommand BackToMenuCommand { get; }
 
+        // Tab switching
+        [ObservableProperty]
+        private bool _isControllerTabActive = false;
+
+        [ObservableProperty]
+        private bool _isKeyboardTabActive = true;
+
+        public IRelayCommand ShowControllerTabCommand { get; }
+
+        // Keyboard mapping
         [ObservableProperty]
         private ObservableCollection<KeyMappingItemViewModel> _currentKeyMappings;
 
@@ -22,8 +32,34 @@ namespace WPFUI_NEW.ViewModels
         [ObservableProperty]
         private string _isAdvancedKeysActive = "";
 
+        // Controller mappings (23 properties)
+        [ObservableProperty] private string _leftShoulderMapping = "";
+        [ObservableProperty] private string _rightShoulderMapping = "";
+        [ObservableProperty] private string _leftTriggerMapping = "";
+        [ObservableProperty] private string _rightTriggerMapping = "";
+        [ObservableProperty] private string _leftStickUpMapping = "";
+        [ObservableProperty] private string _leftStickDownMapping = "";
+        [ObservableProperty] private string _leftStickLeftMapping = "";
+        [ObservableProperty] private string _leftStickRightMapping = "";
+        [ObservableProperty] private string _rightStickUpMapping = "";
+        [ObservableProperty] private string _rightStickDownMapping = "";
+        [ObservableProperty] private string _rightStickLeftMapping = "";
+        [ObservableProperty] private string _rightStickRightMapping = "";
+        [ObservableProperty] private string _buttonAMapping = "";
+        [ObservableProperty] private string _buttonBMapping = "";
+        [ObservableProperty] private string _buttonXMapping = "";
+        [ObservableProperty] private string _buttonYMapping = "";
+        [ObservableProperty] private string _dPadUpMapping = "";
+        [ObservableProperty] private string _dPadDownMapping = "";
+        [ObservableProperty] private string _dPadLeftMapping = "";
+        [ObservableProperty] private string _dPadRightMapping = "";
+        [ObservableProperty] private string _startMapping = "";
+        [ObservableProperty] private string _backMapping = "";
+        [ObservableProperty] private string _guideMapping = "";
+
         public IRelayCommand ShowCommonKeysCommand { get; }
         public IRelayCommand ShowAdvancedKeysCommand { get; }
+        public IRelayCommand ShowKeyboardTabCommand { get; }
         public IRelayCommand ConfirmCommand { get; }
 
         private ObservableCollection<KeyMappingItemViewModel> _commonKeysList;
@@ -33,12 +69,15 @@ namespace WPFUI_NEW.ViewModels
         {
             BackToMenuCommand = backToMenuCommand;
             
+            ShowControllerTabCommand = new RelayCommand(ShowControllerTab);
+            ShowKeyboardTabCommand = new RelayCommand(ShowKeyboardTab);
             ShowCommonKeysCommand = new RelayCommand(ShowCommonKeys);
             ShowAdvancedKeysCommand = new RelayCommand(ShowAdvancedKeys);
             ConfirmCommand = new RelayCommand(SaveMappings);
 
             InitializeKeyLists();
             LoadCurrentMappings();
+            LoadControllerMappings();
             
             // Show common keys by default
             CurrentKeyMappings = _commonKeysList;
@@ -186,6 +225,69 @@ namespace WPFUI_NEW.ViewModels
             }
         }
 
+        private void LoadControllerMappings()
+        {
+            try
+            {
+                var config = ConfigHelper.CurrentConfig;
+                if (config?.ControllerMapping == null) return;
+
+                // Load 23 controller mappings
+                LeftShoulderMapping = GetControllerKeyMapping("LeftShoulder", config);
+                RightShoulderMapping = GetControllerKeyMapping("RightShoulder", config);
+                LeftTriggerMapping = GetControllerKeyMapping("LeftTrigger", config);
+                RightTriggerMapping = GetControllerKeyMapping("RightTrigger", config);
+                LeftStickUpMapping = GetControllerKeyMapping("LeftStickUp", config);
+                LeftStickDownMapping = GetControllerKeyMapping("LeftStickDown", config);
+                LeftStickLeftMapping = GetControllerKeyMapping("LeftStickLeft", config);
+                LeftStickRightMapping = GetControllerKeyMapping("LeftStickRight", config);
+                RightStickUpMapping = GetControllerKeyMapping("RightStickUp", config);
+                RightStickDownMapping = GetControllerKeyMapping("RightStickDown", config);
+                RightStickLeftMapping = GetControllerKeyMapping("RightStickLeft", config);
+                RightStickRightMapping = GetControllerKeyMapping("RightStickRight", config);
+                ButtonAMapping = GetControllerKeyMapping("ButtonA", config);
+                ButtonBMapping = GetControllerKeyMapping("ButtonB", config);
+                ButtonXMapping = GetControllerKeyMapping("ButtonX", config);
+                ButtonYMapping = GetControllerKeyMapping("ButtonY", config);
+                DPadUpMapping = GetControllerKeyMapping("DPadUp", config);
+                DPadDownMapping = GetControllerKeyMapping("DPadDown", config);
+                DPadLeftMapping = GetControllerKeyMapping("DPadLeft", config);
+                DPadRightMapping = GetControllerKeyMapping("DPadRight", config);
+                StartMapping = GetControllerKeyMapping("Start", config);
+                BackMapping = GetControllerKeyMapping("Back", config);
+                GuideMapping = GetControllerKeyMapping("Guide", config);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[KeyMappingViewModel] Error loading controller mappings: {ex.Message}");
+            }
+        }
+
+        private string GetControllerKeyMapping(string actionType, RealTimeUdpStream.Core.Models.KeyMappingConfig config)
+        {
+            // Find which key maps to this action
+            foreach (var kvp in config.ControllerMapping)
+            {
+                if (kvp.Value.Type.ToString() == actionType)
+                {
+                    return kvp.Key; // Return the key name (e.g., "I", "J", "O")
+                }
+            }
+            return ""; // No mapping found
+        }
+
+        private void ShowControllerTab()
+        {
+            IsControllerTabActive = true;
+            IsKeyboardTabActive = false;
+        }
+
+        private void ShowKeyboardTab()
+        {
+            IsControllerTabActive = false;
+            IsKeyboardTabActive = true;
+        }
+
         private void ShowCommonKeys()
         {
             CurrentKeyMappings = _commonKeysList;
@@ -211,9 +313,12 @@ namespace WPFUI_NEW.ViewModels
                     return;
                 }
 
-                // Update mappings from both lists
+                // Update keyboard mappings from both lists
                 UpdateConfigFromList(_commonKeysList, config.KeyboardMapping);
                 UpdateConfigFromList(_advancedKeysList, config.KeyboardMapping);
+
+                // Update controller mappings
+                UpdateControllerMappings(config);
 
                 // Get project root config path from ConfigHelper
                 string configPath = ConfigHelper.GetProjectRootConfigPath();
@@ -223,11 +328,11 @@ namespace WPFUI_NEW.ViewModels
                 // Save to project root file
                 config.SaveToFile(configPath);
                 
-                Console.WriteLine("✓ Key mappings saved successfully!");
+                Console.WriteLine("✓ Mappings saved successfully!");
 
                 // Show success message
                 System.Windows.MessageBox.Show(
-                    "Key mappings saved successfully!",
+                    "Mappings saved successfully!",
                     "Success",
                     System.Windows.MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Information
@@ -242,6 +347,52 @@ namespace WPFUI_NEW.ViewModels
                     System.Windows.MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Error
                 );
+            }
+        }
+
+        private void UpdateControllerMappings(RealTimeUdpStream.Core.Models.KeyMappingConfig config)
+        {
+            // Clear existing controller mappings
+            config.ControllerMapping.Clear();
+
+            // Add mappings for each controller action that has a key assigned
+            AddControllerMapping(config, LeftShoulderMapping, "LeftShoulder");
+            AddControllerMapping(config, RightShoulderMapping, "RightShoulder");
+            AddControllerMapping(config, LeftTriggerMapping, "LeftTrigger");
+            AddControllerMapping(config, RightTriggerMapping, "RightTrigger");
+            AddControllerMapping(config, LeftStickUpMapping, "LeftStickUp");
+            AddControllerMapping(config, LeftStickDownMapping, "LeftStickDown");
+            AddControllerMapping(config, LeftStickLeftMapping, "LeftStickLeft");
+            AddControllerMapping(config, LeftStickRightMapping, "LeftStickRight");
+            AddControllerMapping(config, RightStickUpMapping, "RightStickUp");
+            AddControllerMapping(config, RightStickDownMapping, "RightStickDown");
+            AddControllerMapping(config, RightStickLeftMapping, "RightStickLeft");
+            AddControllerMapping(config, RightStickRightMapping, "RightStickRight");
+            AddControllerMapping(config, ButtonAMapping, "ButtonA");
+            AddControllerMapping(config, ButtonBMapping, "ButtonB");
+            AddControllerMapping(config, ButtonXMapping, "ButtonX");
+            AddControllerMapping(config, ButtonYMapping, "ButtonY");
+            AddControllerMapping(config, DPadUpMapping, "DPadUp");
+            AddControllerMapping(config, DPadDownMapping, "DPadDown");
+            AddControllerMapping(config, DPadLeftMapping, "DPadLeft");
+            AddControllerMapping(config, DPadRightMapping, "DPadRight");
+            AddControllerMapping(config, StartMapping, "Start");
+            AddControllerMapping(config, BackMapping, "Back");
+            AddControllerMapping(config, GuideMapping, "Guide");
+        }
+
+        private void AddControllerMapping(RealTimeUdpStream.Core.Models.KeyMappingConfig config, string keyName, string actionType)
+        {
+            if (string.IsNullOrWhiteSpace(keyName)) return;
+
+            // Parse actionType to ControllerActionType enum
+            if (Enum.TryParse<RealTimeUdpStream.Core.Models.ControllerActionType>(actionType, out var action))
+            {
+                config.ControllerMapping[keyName] = new RealTimeUdpStream.Core.Models.ControllerAction
+                {
+                    Type = action,
+                    Value = 1.0f
+                };
             }
         }
 

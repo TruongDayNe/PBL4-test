@@ -66,6 +66,9 @@
 	  <Resource Include="assets\logo.png">
 	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 	  </Resource>
+	  <Resource Include="Images\*.png">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </Resource>
 	</ItemGroup>
 
 	<!-- Post-build: Copy .NET Framework 4.8 DLLs to fix System.Text.Json version conflict -->

@@ -9,66 +9,95 @@
              d:DataContext="{d:DesignInstance vm:KeyMappingViewModel, IsDesignTimeCreatable=True}">
 
     <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        
+        <!-- Gradient Background -->
+        <LinearGradientBrush x:Key="BackgroundGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#667eea" Offset="0"/>
+            <GradientStop Color="#764ba2" Offset="1"/>
+        </LinearGradientBrush>
+        
         <!-- Tab Button Style -->
         <Style x:Key="TabButton" TargetType="Button">
-            <Setter Property="Width" Value="150"/>
-            <Setter Property="Height" Value="45"/>
-            <Setter Property="FontSize" Value="18"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Background" Value="#E0E0E0"/>
-            <Setter Property="BorderBrush" Value="#CCCCCC"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="#666666"/>
+            <Setter Property="Width" Value="160"/>
+            <Setter Property="Height" Value="50"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Background">
+                <Setter.Value>
+                    <SolidColorBrush Color="White" Opacity="0.7"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Foreground" Value="#667eea"/>
+            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="5,0"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="border"
                                 Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}">
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10,10,0,0">
+                            <Border.Effect>
+                                <DropShadowEffect Color="#667eea" BlurRadius="10" ShadowDepth="0" Opacity="0.2"/>
+                            </Border.Effect>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#D0D0D0"/>
+                                <Setter TargetName="border" Property="Background">
+                                    <Setter.Value>
+                                        <SolidColorBrush Color="White" Opacity="0.85"/>
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
             <Style.Triggers>
-                <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=Tag}" Value="Active">
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=Tag}" Value="True">
                     <Setter Property="Background" Value="White"/>
-                    <Setter Property="Foreground" Value="#333333"/>
-                    <Setter Property="BorderThickness" Value="1,1,1,0"/>
+                    <Setter Property="Foreground" Value="#667eea"/>
                 </DataTrigger>
             </Style.Triggers>
         </Style>
 
         <!-- Sidebar Button Style -->
         <Style x:Key="SidebarButton" TargetType="Button">
-            <Setter Property="Height" Value="45"/>
+            <Setter Property="Height" Value="50"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Background" Value="#C0C0C0"/>
+            <Setter Property="Background">
+                <Setter.Value>
+                    <SolidColorBrush Color="#667eea" Opacity="0.1"/>
+                </Setter.Value>
+            </Setter>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="Foreground" Value="#555"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="Padding" Value="15,0"/>
+            <Setter Property="Padding" Value="20,0"/>
+            <Setter Property="Margin" Value="0,5"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="border"
-                                Background="{TemplateBinding Background}">
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="8"
+                                Margin="10,0">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
                                             VerticalAlignment="Center"
                                             Margin="{TemplateBinding Padding}"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#B0B0B0"/>
+                                <Setter TargetName="border" Property="Background">
+                                    <Setter.Value>
+                                        <SolidColorBrush Color="#667eea" Opacity="0.2"/>
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -76,8 +105,15 @@
             </Setter>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=Tag}" Value="Active">
-                    <Setter Property="Background" Value="White"/>
-                    <Setter Property="Foreground" Value="#000000"/>
+                    <Setter Property="Background">
+                        <Setter.Value>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#667eea" Offset="0"/>
+                                <GradientStop Color="#764ba2" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Setter.Value>
+                    </Setter>
+                    <Setter Property="Foreground" Value="White"/>
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -93,22 +129,117 @@
 
         <!-- Key Input Box Style -->
         <Style x:Key="KeyInputBox" TargetType="TextBox">
-            <Setter Property="Width" Value="80"/>
-            <Setter Property="Height" Value="35"/>
-            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Width" Value="100"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Medium"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="BorderBrush" Value="#CCCCCC"/>
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#667eea"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ScrollViewer x:Name="PART_ContentHost" 
+                                        Margin="5,0"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#667eea" Offset="0"/>
+                                            <GradientStop Color="#764ba2" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="border" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="0" Opacity="0.4"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Custom ScrollBar Style -->
+        <Style x:Key="CustomScrollBar" TargetType="ScrollBar">
+            <Setter Property="Width" Value="8"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid>
+                            <Border Background="#E0E0E0" CornerRadius="4" Opacity="0.3"/>
+                            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate>
+                                                <Border x:Name="thumb" CornerRadius="4" Background="White"/>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="thumb" Property="Opacity" Value="0.85"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CustomScrollViewer" TargetType="ScrollViewer">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollViewer">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ScrollContentPresenter Grid.Column="0"/>
+                            <ScrollBar Grid.Column="1" 
+                                     x:Name="PART_VerticalScrollBar"
+                                     Value="{TemplateBinding VerticalOffset}"
+                                     Maximum="{TemplateBinding ScrollableHeight}"
+                                     ViewportSize="{TemplateBinding ViewportHeight}"
+                                     Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"
+                                     Style="{StaticResource CustomScrollBar}"
+                                     Margin="4,0,4,0"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <!-- Action Button Style -->
         <Style x:Key="ActionButton" TargetType="Button">
-            <Setter Property="Width" Value="120"/>
-            <Setter Property="Height" Value="40"/>
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Background" Value="#2C3E50"/>
+            <Setter Property="Width" Value="130"/>
+            <Setter Property="Height" Value="45"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Background">
+                <Setter.Value>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#667eea" Offset="0"/>
+                        <GradientStop Color="#764ba2" Offset="1"/>
+                    </LinearGradientBrush>
+                </Setter.Value>
+            </Setter>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -117,15 +248,27 @@
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="border"
                                 Background="{TemplateBinding Background}"
-                                CornerRadius="4">
+                                CornerRadius="10">
+                            <Border.Effect>
+                                <DropShadowEffect Color="#667eea" BlurRadius="12" ShadowDepth="2" Opacity="0.4"/>
+                            </Border.Effect>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#34495e"/>
+                                <Setter TargetName="border" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#667eea" BlurRadius="15" ShadowDepth="3" Opacity="0.6"/>
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#1a252f"/>
+                                <Setter TargetName="border" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.96" ScaleY="0.96"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="border" Property="RenderTransformOrigin" Value="0.5,0.5"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -134,7 +277,10 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Background="White">
+    <Grid>
+        <Grid.Background>
+            <StaticResource ResourceKey="BackgroundGradient"/>
+        </Grid.Background>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -143,21 +289,33 @@
 
         <!-- Top Tabs -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0">
-            <Button Content="CONTROLLER" Style="{StaticResource TabButton}" IsEnabled="False" Opacity="0.5"/>
-            <Button Content="KEYBOARD" Style="{StaticResource TabButton}" Tag="Active"/>
+            <Button Content="CONTROLLER" 
+                    Style="{StaticResource TabButton}" 
+                    Tag="{Binding IsControllerTabActive}"
+                    Command="{Binding ShowControllerTabCommand}"/>
+            <Button Content="KEYBOARD" 
+                    Style="{StaticResource TabButton}" 
+                    Tag="{Binding IsKeyboardTabActive}"
+                    Command="{Binding ShowKeyboardTabCommand}"/>
         </StackPanel>
 
-        <!-- Main Content -->
-        <Grid Grid.Row="1" Margin="0,10,0,0">
+        <!-- Main Content - KEYBOARD TAB -->
+        <Grid Grid.Row="1" Margin="0,10,0,0" Visibility="{Binding IsKeyboardTabActive, Converter={StaticResource BoolToVis}}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="200"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
             <!-- Sidebar -->
-            <Border Grid.Column="0" Background="#E8E8E8" BorderBrush="#CCCCCC" BorderThickness="0,0,1,0">
+            <Border Grid.Column="0" BorderThickness="0" CornerRadius="0" Margin="10,0,0,10">
+                <Border.Background>
+                    <SolidColorBrush Color="White" Opacity="0.9"/>
+                </Border.Background>
+                <Border.Effect>
+                    <DropShadowEffect Color="#667eea" BlurRadius="15" ShadowDepth="0" Opacity="0.2"/>
+                </Border.Effect>
                 <StackPanel>
-                    <TextBlock Text="SETTINGS" FontSize="16" FontWeight="Bold" Margin="15,20,15,10" Foreground="#333"/>
+                    <TextBlock Text="SETTINGS" FontSize="18" FontWeight="Bold" Margin="20,25,20,15" Foreground="#667eea"/>
                     <Button Content="Common Keys" 
                             Style="{StaticResource SidebarButton}"
                             Tag="{Binding IsCommonKeysActive}"
@@ -170,7 +328,8 @@
             </Border>
 
             <!-- Key Mapping Area -->
-            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="20">
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="20"
+                          Style="{StaticResource CustomScrollViewer}">
                 <ItemsControl ItemsSource="{Binding CurrentKeyMappings}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -179,48 +338,484 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <StackPanel Orientation="Horizontal" Margin="10">
-                                <!-- Key Icon -->
-                                <Border Style="{StaticResource KeyIcon}">
-                                    <TextBlock Text="{Binding KeyLabel}" 
-                                             FontSize="14" 
-                                             FontWeight="Bold"
-                                             Foreground="White"
-                                             HorizontalAlignment="Center"
-                                             VerticalAlignment="Center"/>
-                                </Border>
+                            <!-- Background Border cho mỗi dòng -->
+                            <Border Background="White" 
+                                    CornerRadius="10" 
+                                    Padding="12,8"
+                                    Margin="8">
+                                <Border.Effect>
+                                    <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                                </Border.Effect>
+                                <StackPanel Orientation="Horizontal">
+                                    <!-- Key Icon -->
+                                    <Border Style="{StaticResource KeyIcon}">
+                                        <TextBlock Text="{Binding KeyLabel}" 
+                                                 FontSize="14" 
+                                                 FontWeight="Bold"
+                                                 Foreground="White"
+                                                 HorizontalAlignment="Center"
+                                                 VerticalAlignment="Center"/>
+                                    </Border>
 
-                                <!-- Key Name -->
-                                <TextBlock Text="{Binding KeyName}" 
-                                         FontSize="14"
-                                         VerticalAlignment="Center"
-                                         Width="120"
-                                         Margin="0,0,10,0"/>
+                                    <!-- Key Name -->
+                                    <TextBlock Text="{Binding KeyName}" 
+                                             FontSize="13"
+                                             FontWeight="Medium"
+                                             VerticalAlignment="Center"
+                                             Width="70"
+                                             Margin="0,0,10,0"
+                                             Foreground="#555"/>
 
-                                <!-- Input Box -->
-                                <TextBox Style="{StaticResource KeyInputBox}"
-                                       Text="{Binding MappedKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                       PreviewKeyDown="KeyInputBox_PreviewKeyDown"
-                                       GotFocus="KeyInputBox_GotFocus"
-                                       Tag="{Binding}"/>
-                            </StackPanel>
+                                    <!-- Input Box -->
+                                    <TextBox Style="{StaticResource KeyInputBox}"
+                                           Text="{Binding MappedKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                           PreviewKeyDown="KeyInputBox_PreviewKeyDown"
+                                           GotFocus="KeyInputBox_GotFocus"
+                                           Tag="{Binding}"/>
+                                </StackPanel>
+                            </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </ScrollViewer>
         </Grid>
 
+        <!-- Main Content - CONTROLLER TAB -->
+        <Grid Grid.Row="1" Visibility="{Binding IsControllerTabActive, Converter={StaticResource BoolToVis}}">
+            <!-- ScrollViewer to allow scrolling for controller layout -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                          Style="{StaticResource CustomScrollViewer}">
+                <!-- Canvas for absolute positioning - explicit size -->
+                <Canvas Width="1250" Height="750">
+                <!-- Controller Layout Image in Center -->
+                <Image Source="/Images/controller-layout.png" 
+                       Canvas.Left="300" Canvas.Top="-50"
+                       Width="700" Height="506"
+                       Opacity="1.0"
+                       Panel.ZIndex="0"/>
+                       
+                <!-- LEFT SIDE MAPPINGS -->
+                <!-- Left Bumper -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="10" Canvas.Top="20" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/Left Bumper.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": Left Bumper" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding LeftShoulderMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                            GotFocus="KeyInputBox_GotFocus"
+                            Tag="LeftShoulder"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Left Trigger -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" Canvas.Left="10" Canvas.Top="95" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/Left Trigger.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": Left Trigger" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                            Text="{Binding LeftTriggerMapping, Mode=TwoWay}"
+                            PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                            GotFocus="KeyInputBox_GotFocus"
+                            Tag="LeftTrigger"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Left Stick Up -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="10" Canvas.Top="170" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/Left Stick Up.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": Left Stick Up" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding LeftStickUpMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="LeftStickUp"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Left Stick Right -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="10" Canvas.Top="245" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/Left Stick Right.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": Left Stick Right" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding LeftStickRightMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="LeftStickRight"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Left Stick Down -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="10" Canvas.Top="320" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/Left Stick Down.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": Left Stick Down" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding LeftStickDownMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="LeftStickDown"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Left Stick Left -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="10" Canvas.Top="395" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/Left Stick Left.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": Left Stick Left" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding LeftStickLeftMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="LeftStickLeft"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- D-Pad Up -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="10" Canvas.Top="470" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/D-Pad Up.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": D-Pad Up" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding DPadUpMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="DPadUp"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- D-Pad Right -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="10" Canvas.Top="545" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/D-Pad Right.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": D-Pad Right" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding DPadRightMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="DPadRight"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- D-Pad Down -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="10" Canvas.Top="620" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/D-Pad Down.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": D-Pad Down" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding DPadDownMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="DPadDown"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- D-Pad Left -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="10" Canvas.Top="695" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/D-Pad Left.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": D-Pad Left" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding DPadLeftMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="DPadLeft"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- RIGHT SIDE MAPPINGS -->
+                <!-- Right Bumper -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="950" Canvas.Top="20" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/Right Bumper.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": Right Bumper" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding RightShoulderMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="RightShoulder"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Right Trigger -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="950" Canvas.Top="95" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/Right Trigger.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": Right Trigger" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding RightTriggerMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="RightTrigger"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Y Button -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="950" Canvas.Top="170" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/Y.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": Y Button" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding ButtonYMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="ButtonY"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- B Button -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="950" Canvas.Top="245" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/B.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": B Button" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding ButtonBMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="ButtonB"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- A Button -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="950" Canvas.Top="320" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/A.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": A Button" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding ButtonAMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="ButtonA"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- X Button -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="950" Canvas.Top="395" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/X.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": X Button" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding ButtonXMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="ButtonX"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Right Stick Up -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="950" Canvas.Top="470" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/Right Stick Up.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": Right Stick Up" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding RightStickUpMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="RightStickUp"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Right Stick Right -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="950" Canvas.Top="545" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/Right Stick Right.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": Right Stick Right" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding RightStickRightMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="RightStickRight"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Right Stick Down -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="950" Canvas.Top="620" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/Right Stick Down.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": Right Stick Down" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding RightStickDownMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="RightStickDown"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Right Stick Left -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="950" Canvas.Top="695" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/Right Stick Left.png" Width="30" Height="30" Margin="0,0,10,0"/>
+                        <TextBlock Text=": Right Stick Left" Width="120" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding RightStickLeftMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="RightStickLeft"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- CENTER BUTTONS (dưới controller image) -->
+                <!-- Menu Button -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="355" Canvas.Top="490" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/Menu.png" Width="25" Height="25" Margin="0,0,10,0"/>
+                        <TextBlock Text=": Start" Width="80" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding StartMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="Start"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- View Button -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="635" Canvas.Top="490" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/View.png" Width="25" Height="25" Margin="0,0,10,0"/>
+                        <TextBlock Text=": Back" Width="80" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding BackMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="Back"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Home Button -->
+                <Border Background="White" CornerRadius="8" Padding="10,8" 
+                        Canvas.Left="495" Canvas.Top="570" Panel.ZIndex="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#667eea" BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Images/Home.png" Width="25" Height="25" Margin="0,0,10,0"/>
+                        <TextBlock Text=": Guide" Width="80" VerticalAlignment="Center" FontSize="13" Foreground="#555"/>
+                        <TextBox Style="{StaticResource KeyInputBox}"
+                                Text="{Binding GuideMapping, Mode=TwoWay}"
+                                PreviewKeyDown="ControllerInputBox_PreviewKeyDown"
+                                GotFocus="KeyInputBox_GotFocus"
+                                Tag="Guide"/>
+                    </StackPanel>
+                </Border>
+                </Canvas>
+            </ScrollViewer>
+        </Grid>
+
         <!-- Footer -->
         <Border Grid.Row="2" 
-                BorderBrush="#CCCCCC" 
-                BorderThickness="0,1,0,0"
-                Background="#F5F5F5"
+                BorderThickness="0"
+                CornerRadius="0"
+                Margin="10,0,10,10"
                 Padding="20">
+            <Border.Background>
+                <SolidColorBrush Color="White" Opacity="0.9"/>
+            </Border.Background>
+            <Border.Effect>
+                <DropShadowEffect Color="#667eea" BlurRadius="15" ShadowDepth="0" Opacity="0.2"/>
+            </Border.Effect>
             <Grid>
-                <TextBlock Text="Create a custom keyboard scheme" 
-                         FontSize="16"
-                         VerticalAlignment="Center"
-                         Foreground="#666"/>
+                <!-- Footer text changes based on tab -->
+                <TextBlock FontSize="15" FontWeight="Medium" VerticalAlignment="Center" Foreground="#667eea">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="Create a custom keyboard scheme"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsControllerTabActive}" Value="True">
+                                    <Setter Property="Text" Value="Create a custom control scheme"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Content="⌨ Confirm" 
                             Style="{StaticResource ActionButton}"
@@ -228,10 +823,14 @@
                             Margin="0,0,10,0"/>
                     <Button Content="⌫ Back" 
                             Style="{StaticResource ActionButton}"
-                            Background="#7F8C8D"
-                            Command="{Binding BackToMenuCommand}"/>
+                            Command="{Binding BackToMenuCommand}">
+                        <Button.Background>
+                            <SolidColorBrush Color="#95a5a6" Opacity="0.9"/>
+                        </Button.Background>
+                    </Button>
                 </StackPanel>
             </Grid>
-        </Border>
+            </Border>
     </Grid>
 </UserControl>
+

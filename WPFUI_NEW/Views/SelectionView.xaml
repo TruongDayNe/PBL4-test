@@ -152,15 +152,16 @@
                 <!-- Host & Client Buttons -->
                 <StackPanel Orientation="Horizontal" 
                             HorizontalAlignment="Center"
-                            Margin="0,0,0,0">
+                            Margin="0,0,0,15">
                     <Button Content="🎮 Host" 
                             Style="{StaticResource SelectionButton}"
-                            Command="{Binding ShowHostViewCommand}"/>
+                            Command="{Binding ShowHostViewCommand}"
+                            Margin="0,0,10,0"/>
 
                     <Button Content="📺 Client" 
                             Style="{StaticResource SelectionButton}"
                             Command="{Binding ShowClientViewCommand}"
-                            Margin="0,0,0,0"/>
+                            Margin="10,0,0,0"/>
                 </StackPanel>
 
                 <!-- Key Mapping Button -->

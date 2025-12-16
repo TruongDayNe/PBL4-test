@@ -101,38 +101,6 @@
     "OemQuotes": ""
   },
   "ControllerMapping": {
-    "I": {
-      "Type": "LeftStickUp",
-      "Value": 1
-    },
-    "J": {
-      "Type": "LeftStickLeft",
-      "Value": 1
-    },
-    "K": {
-      "Type": "LeftStickDown",
-      "Value": 1
-    },
-    "L": {
-      "Type": "LeftStickRight",
-      "Value": 1
-    },
-    "O": {
-      "Type": "ButtonA",
-      "Value": 1
-    },
-    "P": {
-      "Type": "ButtonB",
-      "Value": 1
-    },
-    "U": {
-      "Type": "ButtonX",
-      "Value": 1
-    },
-    "Y": {
-      "Type": "ButtonY",
-      "Value": 1
-    },
     "D1": {
       "Type": "LeftShoulder",
       "Value": 1
@@ -149,20 +117,52 @@
       "Type": "RightTrigger",
       "Value": 1
     },
-    "NumPad8": {
-      "Type": "RightStickUp",
+    "I": {
+      "Type": "LeftStickUp",
       "Value": 1
     },
-    "NumPad4": {
-      "Type": "RightStickLeft",
+    "K": {
+      "Type": "LeftStickDown",
+      "Value": 1
+    },
+    "J": {
+      "Type": "LeftStickLeft",
+      "Value": 1
+    },
+    "L": {
+      "Type": "LeftStickRight",
+      "Value": 1
+    },
+    "NumPad8": {
+      "Type": "RightStickUp",
       "Value": 1
     },
     "NumPad5": {
       "Type": "RightStickDown",
       "Value": 1
     },
+    "NumPad4": {
+      "Type": "RightStickLeft",
+      "Value": 1
+    },
     "NumPad6": {
       "Type": "RightStickRight",
+      "Value": 1
+    },
+    "O": {
+      "Type": "ButtonA",
+      "Value": 1
+    },
+    "P": {
+      "Type": "ButtonB",
+      "Value": 1
+    },
+    "U": {
+      "Type": "ButtonX",
+      "Value": 1
+    },
+    "Y": {
+      "Type": "ButtonY",
       "Value": 1
     },
     "Up": {

@@ -140,5 +140,39 @@ namespace WPFUI_NEW.Views
                 _ => key.ToString()
             };
         }
+
+        /// <summary>
+        /// Handle controller mapping input (same as keyboard)
+        /// </summary>
+        private void ControllerInputBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            e.Handled = true;
+
+            var textBox = sender as TextBox;
+            if (textBox == null) return;
+
+            Key key = (e.Key == Key.System) ? e.SystemKey : e.Key;
+
+            // Backspace clears the mapping
+            if (key == Key.Back)
+            {
+                textBox.Text = "";
+                return;
+            }
+
+            // Ignore modifier keys alone
+            if (key == Key.LeftShift || key == Key.RightShift ||
+                key == Key.LeftCtrl || key == Key.RightCtrl ||
+                key == Key.LeftAlt || key == Key.RightAlt)
+            {
+                return;
+            }
+
+            string keyName = ConvertKeyToString(key);
+            textBox.Text = keyName;
+
+            // Move focus away
+            textBox.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+        }
     }
 }
