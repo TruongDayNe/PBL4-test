@@ -13,6 +13,33 @@ namespace RealTimeUdpStream.Core.Util
     public static class ConfigHelper
     {
         private static KeyMappingConfig _currentConfig;
+        private static FileSystemWatcher _configWatcher;
+        private static string _watchedConfigPath;
+        
+        /// <summary>
+        /// Event fired khi config file thay đổi
+        /// </summary>
+        public static event Action OnConfigChanged;
+
+        /// <summary>
+        /// Get current loaded config
+        /// </summary>
+        public static KeyMappingConfig CurrentConfig => _currentConfig;
+
+        /// <summary>
+        /// Get path to project root config file (not bin copy)
+        /// </summary>
+        public static string GetProjectRootConfigPath()
+        {
+            string binPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "keymapping.json");
+            string projectRootPath = FindProjectRootConfigFile(binPath);
+            
+            if (projectRootPath != null)
+                return projectRootPath;
+            
+            // Fallback to bin path
+            return binPath;
+        }
 
         /// <summary>
         /// Load config từ file (hoặc tạo mới nếu chưa có)
@@ -40,6 +67,12 @@ namespace RealTimeUdpStream.Core.Util
                     Debug.WriteLine("⚠️ Config validation failed, using anyway");
                 }
 
+                // Setup file watcher nếu chưa có
+                if (_configWatcher == null || _watchedConfigPath != configPath)
+                {
+                    SetupFileWatcher(configPath);
+                }
+
                 return _currentConfig;
             }
             catch (Exception ex)
@@ -60,6 +93,111 @@ namespace RealTimeUdpStream.Core.Util
                 Console.WriteLine("Using default config...");
                 _currentConfig = KeyMappingConfig.CreateDefault();
                 return _currentConfig;
+            }
+        }
+
+        /// <summary>
+        /// Setup FileSystemWatcher để tự động reload config khi file thay đổi
+        /// </summary>
+        private static void SetupFileWatcher(string configPath)
+        {
+            try
+            {
+                // Dispose watcher cũ nếu có
+                _configWatcher?.Dispose();
+
+                // Tìm file gốc trong project root (không phải file copy trong bin)
+                var projectRootFile = FindProjectRootConfigFile(configPath);
+                var watchPath = projectRootFile ?? configPath;
+
+                var directory = Path.GetDirectoryName(watchPath);
+                var fileName = Path.GetFileName(watchPath);
+
+                _configWatcher = new FileSystemWatcher(directory, fileName)
+                {
+                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.CreationTime,
+                    EnableRaisingEvents = true
+                };
+
+                _configWatcher.Changed += OnConfigFileChanged;
+                _watchedConfigPath = watchPath;
+
+                Console.WriteLine($"🔍 Watching config file: {watchPath}");
+                if (projectRootFile != null && projectRootFile != configPath)
+                {
+                    Console.WriteLine($"   (Project root file, will copy to: {configPath})");
+                }
+                Debug.WriteLine($"🔍 File watcher setup for: {watchPath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠️ Failed to setup file watcher: {ex.Message}");
+                Debug.WriteLine($"⚠️ Failed to setup file watcher: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Tìm file config trong project root
+        /// </summary>
+        private static string FindProjectRootConfigFile(string binConfigPath)
+        {
+            try
+            {
+                // Nếu file hiện tại trong bin/Debug, tìm file gốc trong project root
+                var currentDir = Path.GetDirectoryName(binConfigPath);
+                
+                // Navigate up từ bin/Debug/net8.0-windows đến project root
+                var projectRoot = currentDir;
+                for (int i = 0; i < 5; i++) // Tối đa 5 levels up
+                {
+                    var parentDir = Directory.GetParent(projectRoot);
+                    if (parentDir == null) break;
+                    
+                    projectRoot = parentDir.FullName;
+                    var candidatePath = Path.Combine(projectRoot, "keymapping.json");
+                    
+                    if (File.Exists(candidatePath))
+                    {
+                        Console.WriteLine($"[ConfigHelper] Found project root config: {candidatePath}");
+                        return candidatePath;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ConfigHelper] Error finding project root: {ex.Message}");
+            }
+            
+            return null;
+        }
+
+        /// <summary>
+        /// Handler khi config file thay đổi
+        /// </summary>
+        private static void OnConfigFileChanged(object sender, FileSystemEventArgs e)
+        {
+            try
+            {
+                // Đợi 200ms để file được ghi xong (tăng từ 100ms để chắc chắn)
+                System.Threading.Thread.Sleep(200);
+
+                Console.WriteLine($"🔄 Config file changed, reloading: {e.FullPath}");
+                Debug.WriteLine($"🔄 Config file changed, reloading...");
+
+                // Reload config từ file gốc
+                _currentConfig = KeyMappingConfig.LoadFromFile(_watchedConfigPath);
+                Console.WriteLine($"✓ Config reloaded from: {_watchedConfigPath}");
+                Console.WriteLine(_currentConfig.ToReadableString());
+
+                // Trigger event để các component khác biết config đã đổi
+                OnConfigChanged?.Invoke();
+                
+                Console.WriteLine($"✓ Config change event fired to {OnConfigChanged?.GetInvocationList().Length ?? 0} subscribers");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error reloading config: {ex.Message}");
+                Debug.WriteLine($"❌ Error reloading config: {ex.Message}");
             }
         }
 

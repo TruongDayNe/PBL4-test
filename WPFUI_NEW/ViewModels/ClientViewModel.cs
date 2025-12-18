@@ -3,17 +3,18 @@ using CommunityToolkit.Mvvm.Input;
 using Core.Networking;
 using RealTimeUdpStream.Core.Audio;
 using RealTimeUdpStream.Core.Input;
-using RealTimeUdpStream.Core.ViGEm; // Add ViGEm namespace
 using RealTimeUdpStream.Core.Models; // Thêm using cho TelemetrySnapshot
 using RealTimeUdpStream.Core.Networking; // Thêm using cho NetworkStats
+using RealTimeUdpStream.Core.ViGEm; // Add ViGEm namespace
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows; // Thêm using này cho MessageBox
+using System.Windows.Automation;
+using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using WPFUI_NEW.Services;
-using System.Windows.Automation;
 
 namespace WPFUI_NEW.ViewModels
 {
@@ -59,9 +60,17 @@ namespace WPFUI_NEW.ViewModels
         [ObservableProperty] private int clientPort = 12001; // Replace _clientPort with generated property
 
         public IAsyncRelayCommand ConnectCommand { get; }
+        public ICommand BackToMenuCommand { get; }
 
-        public ClientViewModel()
+        // Sửa Constructor
+        public ClientViewModel(ICommand backToMenuCommand)
         {
+            // Logic quay về: Cleanup -> Chuyển View
+            BackToMenuCommand = new RelayCommand(() =>
+            {
+                Cleanup(); // Ngắt kết nối UDP, dừng receiver
+                backToMenuCommand.Execute(null);
+            });
             _networkService = new NetworkService();
             ConnectCommand = new AsyncRelayCommand(ToggleConnectionAsync);
             ToggleMenuCommand = new RelayCommand(ToggleMenu);
@@ -215,31 +224,40 @@ namespace WPFUI_NEW.ViewModels
                 // Hàm này giờ chỉ để BẮT ĐẦU STREAM UDP.
                 try
                 {
+                    Console.WriteLine("[CLIENT] ===== STARTING UDP CONNECTION =====");
                     ConnectButtonContent = "Đang kết nối (UDP)...";
 
+                    Console.WriteLine("[CLIENT] Creating UdpPeer on port " + ClientPort);
                     _sharedUdpPeer = new UdpPeer(ClientPort);
 
+                    Console.WriteLine("[CLIENT] Subscribing to OnPacketReceived");
                     _sharedUdpPeer.OnPacketReceived += HandleControlPacket;
 
+                    Console.WriteLine("[CLIENT] Creating ScreenReceiver");
                     _screenReceiver = new ScreenReceiver(_sharedUdpPeer);
                     _screenReceiver.OnFrameReady += HandleFrameReady;
 
+                    Console.WriteLine("[CLIENT] Creating AudioManager");
                     _audioManager = new AudioManager(_sharedUdpPeer, AudioConfig.CreateDefault(), isClientMode: false);
                     _audioManager.StartAudioReceiving();
 
                     // Lấy HOST endpoint để gửi phím
                     var hostEndPoint = new System.Net.IPEndPoint(System.Net.IPAddress.Parse(HostIpAddress), 12000);
                     _hostEndPoint = hostEndPoint;
+                    Console.WriteLine($"[CLIENT] Host endpoint: {hostEndPoint}");
 
                     // Keyboard Manager - WASD keys
-                    _keyboardManager = new KeyboardManager(_sharedUdpPeer, isClientMode: false);
+                    Console.WriteLine("[CLIENT] Creating KeyboardManager...");
+                    _keyboardManager = new KeyboardManager(_sharedUdpPeer, isClientMode: true); // CLIENT capture phím
+                    Console.WriteLine("[CLIENT] Setting target endpoint...");
                     _keyboardManager.SetTargetEndPoint(hostEndPoint);
+                    Console.WriteLine("[CLIENT] Calling StartCapture...");
                     _keyboardManager.StartCapture();
                     Console.WriteLine("[CLIENT] KeyboardManager CAPTURE started - gui phim WASD cho HOST");
                     Debug.WriteLine("[Client] KeyboardManager CAPTURE started - se gui phim WASD cho HOST.");
 
                     // ViGEm Manager - IJKL keys for controller
-                    _vigemManager = new ViGEmManager(_sharedUdpPeer, isClientMode: true);
+                    _vigemManager = new ViGEmManager(_sharedUdpPeer, isClientMode: false); // CLIENT capture IJKL
                     _vigemManager.SetTargetEndPoint(hostEndPoint);
                     _vigemManager.StartCapture();
                     Console.WriteLine("[CLIENT] ViGEmManager CAPTURE started - gui phim IJKL cho HOST");

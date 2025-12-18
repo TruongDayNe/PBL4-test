@@ -1,7 +1,7 @@
 {
   "KeyboardMapping": {
     "W": "Z",
-    "A": "B",
+    "A": "I",
     "S": "G",
     "D": "H",
     "Q": "",
@@ -13,6 +13,16 @@
     "V": "",
     "X": "",
     "Z": "",
+    "B": "",
+    "G": "",
+    "H": "",
+    "K": "",
+    "M": "",
+    "N": "",
+    "O": "",
+    "P": "",
+    "U": "",
+    "Y": "",
     "Space": "",
     "Shift": "",
     "Ctrl": "",
@@ -20,7 +30,6 @@
     "Tab": "",
     "CapsLock": "",
     "Enter": "",
-    "Back": "",
     "Escape": "",
     "D1": "",
     "D2": "",
@@ -47,40 +56,142 @@
     "Up": "",
     "Down": "",
     "Left": "",
-    "Right": ""
+    "Right": "",
+    "PageUp": "",
+    "PageDown": "",
+    "Home": "",
+    "End": "",
+    "Insert": "",
+    "Delete": "",
+    "LShift": "",
+    "RShift": "",
+    "LCtrl": "",
+    "RCtrl": "",
+    "LAlt": "",
+    "RAlt": "",
+    "NumPad0": "",
+    "NumPad1": "",
+    "NumPad2": "",
+    "NumPad3": "",
+    "NumPad4": "",
+    "NumPad5": "",
+    "NumPad6": "",
+    "NumPad7": "",
+    "NumPad8": "",
+    "NumPad9": "",
+    "Multiply": "",
+    "Add": "",
+    "Subtract": "",
+    "Decimal": "",
+    "Divide": "",
+    "NumLock": "",
+    "ScrollLock": "",
+    "Pause": "",
+    "PrintScreen": "",
+    "OemSemicolon": "",
+    "OemPlus": "",
+    "OemComma": "",
+    "OemMinus": "",
+    "OemPeriod": "",
+    "OemQuestion": "",
+    "OemTilde": "",
+    "OemOpenBrackets": "",
+    "OemPipe": "",
+    "OemCloseBrackets": "",
+    "OemQuotes": ""
   },
   "ControllerMapping": {
+    "D1": {
+      "Type": "LeftShoulder",
+      "Value": 1
+    },
+    "D2": {
+      "Type": "RightShoulder",
+      "Value": 1
+    },
+    "D3": {
+      "Type": "LeftTrigger",
+      "Value": 1
+    },
+    "D4": {
+      "Type": "RightTrigger",
+      "Value": 1
+    },
     "I": {
       "Type": "LeftStickUp",
-      "Value": 1.0
-    },
-    "J": {
-      "Type": "LeftStickLeft",
-      "Value": 1.0
+      "Value": 1
     },
     "K": {
       "Type": "LeftStickDown",
-      "Value": 1.0
+      "Value": 1
+    },
+    "J": {
+      "Type": "LeftStickLeft",
+      "Value": 1
     },
     "L": {
       "Type": "LeftStickRight",
-      "Value": 1.0
+      "Value": 1
+    },
+    "NumPad8": {
+      "Type": "RightStickUp",
+      "Value": 1
+    },
+    "NumPad5": {
+      "Type": "RightStickDown",
+      "Value": 1
+    },
+    "NumPad4": {
+      "Type": "RightStickLeft",
+      "Value": 1
+    },
+    "NumPad6": {
+      "Type": "RightStickRight",
+      "Value": 1
     },
     "O": {
       "Type": "ButtonA",
-      "Value": 1.0
+      "Value": 1
     },
     "P": {
       "Type": "ButtonB",
-      "Value": 1.0
+      "Value": 1
     },
     "U": {
       "Type": "ButtonX",
-      "Value": 1.0
+      "Value": 1
     },
     "Y": {
       "Type": "ButtonY",
-      "Value": 1.0
+      "Value": 1
+    },
+    "Up": {
+      "Type": "DPadUp",
+      "Value": 1
+    },
+    "Down": {
+      "Type": "DPadDown",
+      "Value": 1
+    },
+    "Left": {
+      "Type": "DPadLeft",
+      "Value": 1
+    },
+    "Right": {
+      "Type": "DPadRight",
+      "Value": 1
+    },
+    "Enter": {
+      "Type": "Start",
+      "Value": 1
+    },
+    "Back": {
+      "Type": "Back",
+      "Value": 1
+    },
+    "Home": {
+      "Type": "Guide",
+      "Value": 1
     }
   },
   "AudioSettings": {

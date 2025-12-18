@@ -21,7 +21,7 @@ namespace RealTimeUdpStream.Core.Input
         private const uint KEYEVENTF_KEYUP = 0x0002;
         private const uint KEYEVENTF_SCANCODE = 0x0008;
 
-        private readonly Dictionary<VirtualKey, VirtualKey> _keyMapping;
+        private Dictionary<VirtualKey, VirtualKey> _keyMapping;
         private bool _disposed = false;
 
         public KeyboardSimulator(Dictionary<VirtualKey, VirtualKey> keyMapping = null)
@@ -52,6 +52,22 @@ namespace RealTimeUdpStream.Core.Input
                     Console.WriteLine($"  {kvp.Key} → {kvp.Value}");
                     Debug.WriteLine($"  {kvp.Key} → {kvp.Value}");
                 }
+            }
+        }
+        
+        /// <summary>
+        /// Update key mapping realtime (hot reload)
+        /// </summary>
+        public void UpdateKeyMapping(Dictionary<VirtualKey, VirtualKey> newMapping)
+        {
+            _keyMapping = newMapping;
+            Console.WriteLine($"🔄 [KeyboardSimulator] Key mapping updated ({newMapping.Count} mappings)");
+            Debug.WriteLine($"🔄 [KeyboardSimulator] Key mapping updated ({newMapping.Count} mappings)");
+            
+            foreach (var kvp in _keyMapping)
+            {
+                Console.WriteLine($"  {kvp.Key} → {kvp.Value}");
+                Debug.WriteLine($"  {kvp.Key} → {kvp.Value}");
             }
         }
 

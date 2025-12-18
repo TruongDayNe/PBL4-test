@@ -1,10 +1,11 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System;
 using Core.Networking; 
+using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using System.Windows; // Cần cho Application.Current.Dispatcher
+using System.Windows;
+using System.Windows.Input; // Cần cho Application.Current.Dispatcher
 
 namespace WPFUI_NEW.ViewModels
 {
@@ -24,11 +25,13 @@ namespace WPFUI_NEW.ViewModels
         private readonly Action<string> _onHostAcceptedCallback;
         private readonly NetworkService _networkService;
 
-        // 2. SỬA ĐỔI: Constructor (Hàm khởi tạo)
-        // Nhận một hành động (Action) từ MainViewModel
-        public ClientConnectViewModel(Action<string> onHostAcceptedCallback)
+        public ICommand BackToMenuCommand { get; }
+
+        // Sửa Constructor
+        public ClientConnectViewModel(Action<string> onHostAcceptedCallback, ICommand backToMenuCommand)
         {
             _onHostAcceptedCallback = onHostAcceptedCallback;
+            BackToMenuCommand = backToMenuCommand;
             _networkService = new NetworkService(); // Khởi tạo service
         }
 

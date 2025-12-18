@@ -22,10 +22,10 @@ namespace WPFUI_NEW
             base.OnStartup(e);
             
             // Tạo console window để xem debug logs
-            AllocConsole();
-            Console.WriteLine("========================================");
-            Console.WriteLine("       PBL4 Remote Desktop Console      ");
-            Console.WriteLine("========================================\n");
+            //AllocConsole();
+            //Console.WriteLine("========================================");
+            //Console.WriteLine("       PBL4 Remote Desktop Console      ");
+            //Console.WriteLine("========================================\n");
             
             // Force load required DLLs trước khi dùng System.Text.Json
             ForceLoadDependencies();

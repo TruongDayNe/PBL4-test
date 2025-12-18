@@ -3,22 +3,23 @@ using CommunityToolkit.Mvvm.Input;
 using Core.Networking;
 using RealTimeUdpStream.Core.Audio;
 using RealTimeUdpStream.Core.Input;
-using RealTimeUdpStream.Core.ViGEm;
 using RealTimeUdpStream.Core.Models;
+using RealTimeUdpStream.Core.ViGEm;
 using System;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media.Imaging;
-using WPFUI_NEW.Services;
-using System.Collections.ObjectModel;
-using System.Net.Sockets;
 using System.Windows.Threading;
+using WPFUI_NEW.Services;
 using WPFUI_NEW.Views;
 
 namespace WPFUI_NEW.ViewModels
@@ -97,9 +98,17 @@ namespace WPFUI_NEW.ViewModels
 
         // THÊM: Command Tắt Mic
         public IAsyncRelayCommand<ConnectedClientViewModel> ToggleMuteClientCommand { get; }
+        public ICommand BackToMenuCommand { get; }
 
-        public HostViewModel()
+        // Sửa Constructor
+        public HostViewModel(ICommand backToMenuCommand) // Nhận command từ Main
         {
+            // Tạo một RelayCommand bọc lấy logic quay về để thực hiện Cleanup trước
+            BackToMenuCommand = new RelayCommand(() =>
+            {
+                Cleanup(); // Dừng TCP, dừng Stream
+                backToMenuCommand.Execute(null); // Chuyển View
+            });
             _networkService = new NetworkService();
             _networkService.ClientRequestReceived += OnClientRequestReceived;
             _networkService.ClientAccepted += OnClientAccepted;
@@ -441,10 +450,10 @@ namespace WPFUI_NEW.ViewModels
                     _audioManager = new AudioManager(_sharedUdpPeer, AudioConfig.CreateDefault(), false);
                     _audioManager.StartAudioStreaming(AudioInputType.SystemAudio);
 
-                    _keyboardManager = new KeyboardManager(_sharedUdpPeer, true);
+                    _keyboardManager = new KeyboardManager(_sharedUdpPeer, isClientMode: false); // HOST simulate phím
                     _keyboardManager.StartSimulation();
 
-                    _vigemManager = new ViGEmManager(_sharedUdpPeer, false);
+                    _vigemManager = new ViGEmManager(_sharedUdpPeer, isClientMode: true); // HOST simulate controller
                     _vigemManager.StartSimulation();
                     if (_audioManager != null)
                     {

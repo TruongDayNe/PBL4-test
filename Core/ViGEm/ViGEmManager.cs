@@ -1,6 +1,7 @@
 using Core.Networking;
 using RealTimeUdpStream.Core.Input;
 using RealTimeUdpStream.Core.Models;
+using RealTimeUdpStream.Core.Util;
 using System;
 using System.Diagnostics;
 using System.Net;
@@ -33,6 +34,28 @@ namespace RealTimeUdpStream.Core.ViGEm
             _isClientMode = isClientMode;
 
             Debug.WriteLine($"[ViGEmManager] Initialized - Mode: {(_isClientMode ? "CLIENT (capture)" : "HOST (simulate)")}");
+            
+            // Subscribe to config changes
+            ConfigHelper.OnConfigChanged += OnConfigReloaded;
+        }
+        
+        /// <summary>
+        /// Handler khi config file thay đổi
+        /// </summary>
+        private void OnConfigReloaded()
+        {
+            try
+            {
+                Debug.WriteLine("🔄 [ViGEmManager] Config changed - controller mappings reloaded");
+                Console.WriteLine("🔄 [ViGEmManager] Config changed - controller mappings reloaded");
+                
+                // Controller mapping được load lại tự động khi parse packet
+                // Không cần reload gì thêm vì mỗi lần simulate đều check mapping mới
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"❌ [ViGEmManager] Error handling config reload: {ex.Message}");
+            }
         }
 
         public void SetTargetEndPoint(IPEndPoint targetEndPoint)
@@ -42,11 +65,11 @@ namespace RealTimeUdpStream.Core.ViGEm
         }
 
         /// <summary>
-        /// Bắt đầu capture phím IJKL (CLIENT mode)
+        /// Bắt đầu capture phím IJKL (HOST mode - gửi cho CLIENT)
         /// </summary>
         public void StartCapture()
         {
-            if (_disposed || _isCapturing || !_isClientMode) return;
+            if (_disposed || _isCapturing || _isClientMode) return; // Chỉ HOST (isClientMode=false) mới capture
 
             try
             {
@@ -97,10 +120,10 @@ namespace RealTimeUdpStream.Core.ViGEm
         {
             Console.WriteLine($"[ViGEmManager] StartSimulation called - isClientMode: {_isClientMode}, disposed: {_disposed}, isSimulating: {_isSimulating}");
             
-            if (_disposed || _isSimulating || _isClientMode) 
+            if (_disposed || _isSimulating || !_isClientMode) 
             {
                 Console.WriteLine($"[ViGEmManager] StartSimulation SKIPPED - returning early");
-                return; // HOST mode = isClientMode FALSE
+                return; // Chỉ CLIENT (isClientMode=true) mới simulate controller
             }
 
             try

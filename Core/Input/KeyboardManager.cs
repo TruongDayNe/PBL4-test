@@ -37,6 +37,38 @@ namespace RealTimeUdpStream.Core.Input
             _isClientMode = isClientMode;
 
             Debug.WriteLine($"[KeyboardManager] Initialized - Mode: {(_isClientMode ? "CLIENT (simulate)" : "HOST (capture)")}");
+            
+            // Subscribe to config changes để reload mapping
+            ConfigHelper.OnConfigChanged += OnConfigReloaded;
+        }
+        
+        /// <summary>
+        /// Handler khi config file thay đổi - reload key mappings
+        /// </summary>
+        private void OnConfigReloaded()
+        {
+            try
+            {
+                Debug.WriteLine("🔄 [KeyboardManager] Config changed, reloading key mappings...");
+                Console.WriteLine("🔄 [KeyboardManager] Config changed, reloading key mappings...");
+                
+                // Chỉ reload mapping nếu đang simulate (CLIENT mode)
+                if (_isSimulating && _keyboardSimulator != null)
+                {
+                    var config = ConfigHelper.GetConfig();
+                    var newMapping = ConvertToVirtualKeyMapping(config.KeyboardMapping);
+                    
+                    _keyboardSimulator.UpdateKeyMapping(newMapping);
+                    
+                    Console.WriteLine($"✓ [KeyboardManager] Reloaded {newMapping.Count} key mappings");
+                    Debug.WriteLine($"✓ [KeyboardManager] Reloaded {newMapping.Count} key mappings");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"❌ [KeyboardManager] Error reloading config: {ex.Message}");
+                Console.WriteLine($"❌ [KeyboardManager] Error reloading config: {ex.Message}");
+            }
         }
 
         public void SetTargetEndPoint(IPEndPoint targetEndPoint)
@@ -46,11 +78,11 @@ namespace RealTimeUdpStream.Core.Input
         }
 
         /// <summary>
-        /// Bắt đầu capture phím (HOST mode)
+        /// Bắt đầu capture phím (CLIENT mode - gửi cho HOST)
         /// </summary>
         public void StartCapture()
         {
-            if (_disposed || _isCapturing || _isClientMode) return;
+            if (_disposed || _isCapturing || !_isClientMode) return; // Chỉ CLIENT (isClientMode=true) mới capture
 
             try
             {
@@ -94,11 +126,11 @@ namespace RealTimeUdpStream.Core.Input
         }
 
         /// <summary>
-        /// Bắt đầu nhận và giả lập phím (CLIENT mode)
+        /// Bắt đầu nhận và giả lập phím (HOST mode - nhận từ CLIENT)
         /// </summary>
         public void StartSimulation()
         {
-            if (_disposed || !_isClientMode) return;
+            if (_disposed || _isClientMode) return; // Chỉ HOST (isClientMode=false) mới simulate
 
             _isSimulating = true;
             
@@ -257,7 +289,9 @@ namespace RealTimeUdpStream.Core.Input
         /// </summary>
         private void HandleReceivedPacket(UdpPacket packet)
         {
-            Console.WriteLine($"[KeyboardManager] HandleReceivedPacket called - Type: 0x{packet.Header.PacketType:X2}, isSimulating: {_isSimulating}");
+            // ALWAYS log to debug packet routing
+            Console.WriteLine($"[KeyboardManager] HandleReceivedPacket ENTRY - Type: 0x{packet.Header.PacketType:X2}, isSimulating: {_isSimulating}, Expected: 0x{KEYBOARD_PACKET_TYPE:X2}");
+            Debug.WriteLine($"[KeyboardManager] HandleReceivedPacket ENTRY - Type: 0x{packet.Header.PacketType:X2}");
             
             if (!_isSimulating)
             {
@@ -267,7 +301,7 @@ namespace RealTimeUdpStream.Core.Input
             
             if (packet.Header.PacketType != KEYBOARD_PACKET_TYPE)
             {
-                Console.WriteLine($"[KeyboardManager] KHONG PHAI KEYBOARD PACKET (Expected: 0x{KEYBOARD_PACKET_TYPE:X2}) - Bo qua");
+                // Don't spam logs for other packet types - this is normal
                 return;
             }
 

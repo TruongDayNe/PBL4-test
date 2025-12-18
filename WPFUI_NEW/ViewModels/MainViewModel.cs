@@ -13,6 +13,7 @@ namespace WPFUI_NEW.ViewModels
         public ClientViewModel ClientViewModel { get; }
         public SelectionViewModel SelectionViewModel { get; }
         public ClientConnectViewModel ClientConnectViewModel { get; }
+        public KeyMappingViewModel KeyMappingViewModel { get; }
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsSelectionViewActive))]
@@ -26,6 +27,7 @@ namespace WPFUI_NEW.ViewModels
         public IRelayCommand ShowHostViewCommand { get; }
         public IRelayCommand ShowClientViewCommand { get; }
         public IRelayCommand ShowSelectionViewCommand { get; }
+        public IRelayCommand ShowKeyMappingViewCommand { get; }
         public IRelayCommand<string> NavigateToClientStreamCommand { get; }
 
         public MainViewModel()
@@ -44,16 +46,25 @@ namespace WPFUI_NEW.ViewModels
 
             // Khởi tạo command điều hướng nội bộ
             NavigateToClientStreamCommand = new RelayCommand<string>(NavigateToClientStream);
-
-            HostViewModel = new HostViewModel();
-            ClientViewModel = new ClientViewModel();
-            ClientConnectViewModel = new ClientConnectViewModel(NavigateToClientStream);
+            //HostViewModel = new HostViewModel();
+            //ClientViewModel = new ClientViewModel();
+            //ClientConnectViewModel = new ClientConnectViewModel(NavigateToClientStream);
 
             ShowHostViewCommand = new RelayCommand(ShowHostView);
             ShowClientViewCommand = new RelayCommand(ShowClientConnectView);
             ShowSelectionViewCommand = new RelayCommand(ShowSelectionView);
+            ShowKeyMappingViewCommand = new RelayCommand(ShowKeyMappingView);
+            NavigateToClientStreamCommand = new RelayCommand<string>(NavigateToClientStream);
 
-            SelectionViewModel = new SelectionViewModel(ShowHostViewCommand, ShowClientViewCommand);
+            HostViewModel = new HostViewModel(ShowSelectionViewCommand);
+
+            ClientViewModel = new ClientViewModel(ShowSelectionViewCommand);
+
+            ClientConnectViewModel = new ClientConnectViewModel(NavigateToClientStream, ShowSelectionViewCommand);
+
+            KeyMappingViewModel = new KeyMappingViewModel(ShowSelectionViewCommand);
+
+            SelectionViewModel = new SelectionViewModel(ShowHostViewCommand, ShowClientViewCommand, ShowKeyMappingViewCommand);
 
             CurrentViewModel = SelectionViewModel;
         }
@@ -67,6 +78,19 @@ namespace WPFUI_NEW.ViewModels
         }
         private void ShowClientConnectView() => CurrentViewModel = ClientConnectViewModel;
         private void ShowSelectionView() => CurrentViewModel = SelectionViewModel;
+        
+        private void ShowKeyMappingView()
+        {
+            // Reload config from file to discard unsaved changes
+            ConfigHelper.LoadConfig();
+            
+            // Recreate KeyMappingViewModel with fresh config
+            var newKeyMappingViewModel = new KeyMappingViewModel(ShowSelectionViewCommand);
+            
+            // Update the reference (optional, if you want to keep the old instance)
+            // For now we just show the new one
+            CurrentViewModel = newKeyMappingViewModel;
+        }
 
         private void NavigateToClientStream(string hostIp)
         {

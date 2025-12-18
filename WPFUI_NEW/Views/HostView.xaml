@@ -157,16 +157,39 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <Border Grid.Row="0" Style="{StaticResource CardBorder}">
+            <Border Grid.Row="0" Style="{StaticResource CardBorder}" HorizontalAlignment="Left">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Width="200">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="11*"/>
+                                <ColumnDefinition Width="189*"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Row="0"
+                                Style="{StaticResource IconButton}" 
+                                Command="{Binding BackToMenuCommand}"
+                                ToolTip="Quay lại Menu"
+                                Margin="0,-26,168,0"
+                                VerticalAlignment="Top" Grid.ColumnSpan="2">
+                                <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="20"/>
+                            </Button>
+                            <Button 
+                                Content="{Binding StreamButtonContent}" 
+                                FontSize="16" Padding="25,20" 
+                                VerticalAlignment="Center" Margin="0,0,40,0"
+                                Style="{StaticResource AccentButton}"
+                                Command="{Binding StartStreamCommand}" Height="51" Grid.ColumnSpan="2"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Stretch">
                         <TextBlock Text="MÃ KẾT NỐI (IP CỦA BẠN)" FontSize="14" Foreground="{StaticResource TextSecondaryColor}" FontWeight="SemiBold"/>
-                        <Border Background="{StaticResource BackgroundColor}" CornerRadius="4" Padding="12,8" Margin="0,8,0,0">
+                        <Border Background="{StaticResource BackgroundColor}" CornerRadius="4" Padding="12,8" Margin="0,8,0,0" Width="422">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -181,12 +204,6 @@
                         <TextBlock Text="{Binding StatusText}" HorizontalAlignment="Left" Margin="0,8,0,0" FontSize="14" Opacity="0.8"/>
                     </StackPanel>
 
-                    <Button Grid.Column="1" 
-                            Content="{Binding StreamButtonContent}" 
-                            FontSize="16" Padding="25,20" 
-                            VerticalAlignment="Stretch" Margin="20,0,0,0"
-                            Style="{StaticResource AccentButton}"
-                            Command="{Binding StartStreamCommand}"/>
                 </Grid>
             </Border>
 
