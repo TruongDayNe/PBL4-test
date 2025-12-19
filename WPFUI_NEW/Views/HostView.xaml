@@ -170,14 +170,6 @@
                                 <ColumnDefinition Width="11*"/>
                                 <ColumnDefinition Width="189*"/>
                             </Grid.ColumnDefinitions>
-                            <Button Grid.Row="0"
-                                Style="{StaticResource IconButton}" 
-                                Command="{Binding BackToMenuCommand}"
-                                ToolTip="Quay lại Menu"
-                                Margin="0,-26,168,0"
-                                VerticalAlignment="Top" Grid.ColumnSpan="2">
-                                <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="20"/>
-                            </Button>
                             <Button 
                                 Content="{Binding StreamButtonContent}" 
                                 FontSize="16" Padding="25,20" 

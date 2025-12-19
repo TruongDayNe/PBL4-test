@@ -98,14 +98,6 @@
                         Margin="0,20,0,0"
                         Style="{StaticResource AccentButton}"
                         Command="{Binding ConnectCommand}"/>
-
-                <Button Grid.Row="3"
-                        Content="Quay lại"
-                        FontSize="14"
-                        Padding="8"
-                        Margin="0,10,0,0"
-                        Style="{StaticResource LightButton}"
-                        Command="{Binding BackToMenuCommand}"/>
             </Grid>
 
             <StackPanel Margin="0,20,0,0"

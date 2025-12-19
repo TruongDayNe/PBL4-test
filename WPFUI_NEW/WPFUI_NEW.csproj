@@ -21,7 +21,8 @@
 		<PackageReference Include="SharpDX" Version="4.2.0" />
 		<PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
 		<PackageReference Include="System.Drawing.Common" Version="9.0.10" />
-		<PackageReference Include="System.Text.Json" Version="9.0.9" />
+		<PackageReference Include="System.Text.Encodings.Web" Version="9.0.0" />
+		<PackageReference Include="System.Text.Json" Version="9.0.0" />
 		<PackageReference Include="Verify.CommunityToolkit.Mvvm" Version="1.1.0" />
 	</ItemGroup>
 
@@ -41,10 +42,6 @@
 		<Compile Update="Views\ClientView.xaml.cs">
 			<SubType>Code</SubType>
 			<DependentUpon>ClientView.xaml</DependentUpon>
-		</Compile>
-		<Compile Update="Views\HostPreStreamView.xaml.cs">
-			<SubType>Code</SubType>
-			<DependentUpon>HostPreStreamView.xaml</DependentUpon>
 		</Compile>
 		<Compile Update="Views\HostView.xaml.cs">
 			<SubType>Code</SubType>
@@ -75,8 +72,8 @@
 	<!-- Use AfterTargets="AfterBuild" to ensure this runs AFTER all default copy operations -->
 	<Target Name="CopyFrameworkDependencies" AfterTargets="AfterBuild">
 		<Message Importance="high" Text="Copying Framework dependencies to output folder..." />
-		<Copy SourceFiles="..\packages\System.Text.Json.9.0.9\lib\net462\System.Text.Json.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" />
-		<Copy SourceFiles="..\packages\System.Text.Encodings.Web.9.0.9\lib\net462\System.Text.Encodings.Web.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" />
+		<Copy SourceFiles="..\packages\System.Text.Json.9.0.0\lib\net462\System.Text.Json.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" />
+		<Copy SourceFiles="..\packages\System.Text.Encodings.Web.9.0.0\lib\net462\System.Text.Encodings.Web.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" />
 		<Copy SourceFiles="..\packages\Microsoft.Bcl.AsyncInterfaces.9.0.9\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" />
 		<Copy SourceFiles="..\packages\System.Memory.4.6.3\lib\netstandard2.0\System.Memory.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" />
 		<Copy SourceFiles="..\packages\System.Buffers.4.6.1\lib\netstandard2.0\System.Buffers.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" />

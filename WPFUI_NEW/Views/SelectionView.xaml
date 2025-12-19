@@ -111,8 +111,8 @@
 
             <StackPanel>
                 <!-- Logo Placeholder -->
-                <Border Width="240" 
-                        Height="160" 
+                <Border Width="360" 
+                        Height="250" 
                         Background="#FFFFFF"
                         BorderBrush="#667eea"
                         BorderThickness="3"
@@ -152,13 +152,15 @@
                 <!-- Host & Client Buttons -->
                 <StackPanel Orientation="Horizontal" 
                             HorizontalAlignment="Center"
-                            Margin="0,0,0,5">
-                    <Button Content="🎮 Host" 
+                            Margin="5,0,5,5">
+                    <Button Content="🎮 Host"
+                            Width="180"
                             Style="{StaticResource SelectionButton}"
                             Command="{Binding ShowHostViewCommand}"
                             Margin="0,0,5,0"/>
 
                     <Button Content="📺 Client" 
+                            Width="180"
                             Style="{StaticResource SelectionButton}"
                             Command="{Binding ShowClientViewCommand}"
                             Margin="5,0,0,0"/>
@@ -166,6 +168,7 @@
 
                 <!-- Key Mapping Button -->
                 <Button Content="⌨ Key Mapping" 
+                        Width="180"
                         Style="{StaticResource KeyMappingButton}"
                         Command="{Binding ShowKeyMappingViewCommand}"
                         HorizontalAlignment="Center"/>
