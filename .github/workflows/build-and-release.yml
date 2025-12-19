@@ -1,16 +1,14 @@
+# IMPORTANT: Cấp quyền ghi để GitHub Action có thể tạo Release
 name: Build and Release
 
 on:
   push:
-    # Trigger khi push code vào nhánh main
     branches: [ "main" ] 
-    # QUAN TRỌNG: Trigger khi bạn push tag (ví dụ: v1.0.0) để tạo Release
     tags:
       - 'v*' 
   pull_request:
     branches: [ "main" ]
 
-# Cấp quyền ghi để GitHub Action có thể tạo Release
 permissions:
   contents: write
 
@@ -20,20 +18,19 @@ jobs:
 
     env:
       Solution_Name: RealTimeUdpStream.sln
-      # Đường dẫn project mới của bạn
       Project_Path: WPFUI_NEW/WPFUI_NEW.csproj
-      # Tên file zip kết quả
-      Zip_Name: MyApp_Release.zip
+      # Tên file zip
+      Zip_Name: VirtualSofa.zip
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # --- BƯỚC 1: Cài đặt môi trường ---
+    #Cài đặt môi trường
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x # Chỉnh lại version phù hợp với project của bạn
+        dotnet-version: 8.0.x # Chỉnh lại version phù hợp
 
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
@@ -41,16 +38,16 @@ jobs:
     - name: Setup NuGet
       uses: NuGet/setup-nuget@v2
 
-    # --- BƯỚC 2: Build Solution (Để xử lý phần .NET Framework) ---
+    # Build Solution (Để xử lý phần .NET Framework) 
     - name: Restore NuGet packages
       run: nuget restore ${{ env.Solution_Name }}
 
     - name: Build Solution
       run: msbuild ${{ env.Solution_Name }} /p:Configuration=Release /p:Platform="Any CPU"
 
-    # --- BƯỚC 3: Publish App & Tạo Zip ---
+    # Publish App & Tạo Zip
     
-    # 3.1 Publish ra thư mục riêng (./publish_output)
+    # Publish ra thư mục riêng (./publish_output)
     - name: Publish WPF App
       run: |
         dotnet publish ${{ env.Project_Path }} `
@@ -61,15 +58,15 @@ jobs:
         -p:IncludeNativeLibrariesForSelfExtract=true `
         --output ./publish_output
 
-    # 3.2 Nén Zip: Chỉ lấy nội dung BÊN TRONG folder publish_output
+    # Nén Zip: Chỉ lấy nội dung BÊN TRONG folder publish_output
     # Dùng Compress-Archive với dấu * để lấy files bên trong, không lấy folder mẹ
     - name: Zip Release Content
       run: |
         Compress-Archive -Path .\publish_output\* -DestinationPath ./${{ env.Zip_Name }}
 
-    # --- BƯỚC 4: Tạo GitHub Release ---
+    # Tạo GitHub Release
     
-    # Chỉ chạy bước này khi bạn push một Tag (ví dụ: v1.0)
+    # Chỉ chạy bước này khi bạn push một Tag (ví dụ: v1.0.x)
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
