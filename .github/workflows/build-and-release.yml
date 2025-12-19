@@ -1,62 +1,56 @@
-name: Build and Publish Application
+name: Build and Release
 
 on:
   push:
-    branches: [ "main", "develop" ]
-    # Mở dòng dưới nếu muốn tạo Release thực sự khi push tag (ví dụ: v1.0.0)
-    # tags:
-    #   - 'v*'
+    # Trigger khi push code vào nhánh main
+    branches: [ "main" ] 
+    # QUAN TRỌNG: Trigger khi bạn push tag (ví dụ: v1.0.0) để tạo Release
+    tags:
+      - 'v*' 
   pull_request:
-    branches: [ "main", "develop" ]
+    branches: [ "main" ]
 
-# Cấp quyền ghi để có thể tạo Release (nếu cần)
+# Cấp quyền ghi để GitHub Action có thể tạo Release
 permissions:
   contents: write
 
 jobs:
-  build-and-publish:
+  build-and-release:
     runs-on: windows-latest
 
     env:
-      # Tên file Solution của bạn
       Solution_Name: RealTimeUdpStream.sln
-      # Đường dẫn đến project WPF mới (.csproj)
+      # Đường dẫn project mới của bạn
       Project_Path: WPFUI_NEW/WPFUI_NEW.csproj
-      # Tên file output mong muốn (ví dụ VirtualSofa.zip)
-      Output_Zip_Name: VirtualSofa_Release.zip
+      # Tên file zip kết quả
+      Zip_Name: MyApp_Release.zip
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
     # --- BƯỚC 1: Cài đặt môi trường ---
-    
-    # Cài đặt .NET (cho lệnh dotnet publish)
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x # Sửa thành phiên bản bạn đang dùng (6.0.x, 7.0.x, hoặc 8.0.x)
+        dotnet-version: 8.0.x # Chỉnh lại version phù hợp với project của bạn
 
-    # Cài đặt MSBuild (cho các project .NET Framework cũ trong Solution)
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
 
     - name: Setup NuGet
       uses: NuGet/setup-nuget@v2
 
-    # --- BƯỚC 2: Build & Restore ---
-
+    # --- BƯỚC 2: Build Solution (Để xử lý phần .NET Framework) ---
     - name: Restore NuGet packages
       run: nuget restore ${{ env.Solution_Name }}
 
-    # Build toàn bộ Solution bằng MSBuild để đảm bảo các dependency .NET Framework được build xong
-    - name: Build Solution (MSBuild)
+    - name: Build Solution
       run: msbuild ${{ env.Solution_Name }} /p:Configuration=Release /p:Platform="Any CPU"
 
-    # --- BƯỚC 3: Publish App (Core logic) ---
-
-    # Chạy lệnh publish mà bạn yêu cầu. 
-    # Lưu ý: Tôi thêm "--output ./publish_output" để gom file vào một chỗ dễ đóng gói.
+    # --- BƯỚC 3: Publish App & Tạo Zip ---
+    
+    # 3.1 Publish ra thư mục riêng (./publish_output)
     - name: Publish WPF App
       run: |
         dotnet publish ${{ env.Project_Path }} `
@@ -67,29 +61,22 @@ jobs:
         -p:IncludeNativeLibrariesForSelfExtract=true `
         --output ./publish_output
 
-    # --- BƯỚC 4: Đóng gói & Release ---
+    # 3.2 Nén Zip: Chỉ lấy nội dung BÊN TRONG folder publish_output
+    # Dùng Compress-Archive với dấu * để lấy files bên trong, không lấy folder mẹ
+    - name: Zip Release Content
+      run: |
+        Compress-Archive -Path .\publish_output\* -DestinationPath ./${{ env.Zip_Name }}
 
-    # Nén folder publish thành file zip (để người dùng tải về gọn nhẹ)
-    - name: Zip Release
-      uses: thedoctor0/zip-release@0.7.6
-      with:
-        type: 'zip'
-        filename: ${{ env.Output_Zip_Name }}
-        directory: './publish_output'
-
-    # Cách 1: Upload dưới dạng Artifact (Tải về từ tab Actions) - Dùng cho mọi lần push
-    - name: Upload Build Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: VirtualSofa-Build
-        path: ./publish_output/${{ env.Output_Zip_Name }}
-
-    # Cách 2: Tạo GitHub Release (Chỉ chạy khi có Tag hoặc chỉnh sửa điều kiện if)
-    # Phần này sẽ tạo một Release chính thức trên GitHub và đính kèm file zip
+    # --- BƯỚC 4: Tạo GitHub Release ---
+    
+    # Chỉ chạy bước này khi bạn push một Tag (ví dụ: v1.0)
     - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/') # Chỉ chạy khi push tag (ví dụ v1.0)
+      if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       with:
-        files: ./publish_output/${{ env.Output_Zip_Name }}
+        # Tên file muốn upload lên release
+        files: ${{ env.Zip_Name }}
+        # Tự động ghi chú release dựa trên commit message (tuỳ chọn)
+        generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
