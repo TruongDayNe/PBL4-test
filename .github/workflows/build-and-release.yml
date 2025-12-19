@@ -1,27 +1,23 @@
-name: Build and Release WPF App
+name: Build and Release VirtualSofa
 
 on:
   push:
     branches: [ "main" ]
     tags:
-      - 'v*' # Chỉ chạy tính năng Release khi push tag (ví dụ: v1.0, v2.1.3)
-  pull_request:
-    branches: [ "main" ]
-  workflow_dispatch: # Cho phép chạy thủ công từ tab Actions
+      - 'v*' # Chỉ tạo Release khi push tag (ví dụ: v1.0.0)
+  workflow_dispatch:
 
 jobs:
   build-and-release:
     runs-on: windows-latest
     
-    # Cấp quyền ghi để action có thể tạo Release
     permissions:
       contents: write
 
     env:
-      # Đường dẫn đến file project bạn muốn build
       Project_Path: WPFUI_NEW/WPFUI_NEW.csproj
-      # Tên file EXE đầu ra (để tiện đổi tên nếu cần)
-      Exe_Name: WPFUI_NEW.exe
+      # Tên App bạn muốn
+      App_Name: VirtualSofa
 
     steps:
     - name: Checkout repository
@@ -30,39 +26,20 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x # Thay đổi phiên bản này khớp với project của bạn (6.0, 7.0, 8.0...)
+        dotnet-version: 8.0.x # Chỉnh lại phiên bản .NET nếu cần (6.0.x, 7.0.x...)
 
-    # Build và Publish theo lệnh bạn yêu cầu
-    # Đã thêm "-o ./publish" để gom file output vào thư mục ./publish
+    # Build và đổi tên file output thành VirtualSofa.exe ngay trong lệnh publish
     - name: Publish Single File
       run: |
-        dotnet publish ${{ env.Project_Path }} -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./publish
+        dotnet publish ${{ env.Project_Path }} -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:AssemblyName=${{ env.App_Name }} -o ./publish
 
-    # (Tùy chọn) Nén thành file ZIP để gọn gàng hơn khi tải về
-    - name: Archive Release
-      uses: thedoctor0/zip-release@0.7.6
-      with:
-        type: 'zip'
-        filename: 'MyApp-Release.zip'
-        directory: './publish'
-
-    # Bước này tạo Release trên GitHub
-    # Chỉ chạy khi sự kiện là push tag (ví dụ: git tag v1.0.0 && git push origin v1.0.0)
+    # Tạo Release và chỉ upload các file có trong folder publish (ở đây là file .exe)
     - name: Create GitHub Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       with:
-        files: |
-          ./publish/${{ env.Exe_Name }}
-          ./publish/VirtualSofa.zip
+        files: ./publish/${{ env.App_Name }}.exe
         draft: false
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    # Upload Artifact để bạn có thể tải về test ngay cả khi không tạo Release (khi push code thường)
-    - name: Upload Build Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: WPF-App-Build
-        path: ./publish
