@@ -1,51 +1,95 @@
-name: Build and Release VirtualSofa
+name: Build and Publish Application
 
 on:
   push:
-    branches: [ "main" ]
-    tags:
-      - 'v*'
-  workflow_dispatch:
+    branches: [ "main", "develop" ]
+    # Mở dòng dưới nếu muốn tạo Release thực sự khi push tag (ví dụ: v1.0.0)
+    # tags:
+    #   - 'v*'
+  pull_request:
+    branches: [ "main", "develop" ]
+
+# Cấp quyền ghi để có thể tạo Release (nếu cần)
+permissions:
+  contents: write
 
 jobs:
-  build-and-release:
+  build-and-publish:
     runs-on: windows-latest
-    
-    permissions:
-      contents: write
 
     env:
+      # Tên file Solution của bạn
+      Solution_Name: RealTimeUdpStream.sln
+      # Đường dẫn đến project WPF mới (.csproj)
       Project_Path: WPFUI_NEW/WPFUI_NEW.csproj
-      App_Name: VirtualSofa
+      # Tên file output mong muốn (ví dụ VirtualSofa.zip)
+      Output_Zip_Name: VirtualSofa_Release.zip
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    # --- BƯỚC 1: Cài đặt môi trường ---
+    
+    # Cài đặt .NET (cho lệnh dotnet publish)
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 8.0.x # Sửa thành phiên bản bạn đang dùng (6.0.x, 7.0.x, hoặc 8.0.x)
 
-    # 1. Build ra nhiều file (exe + dll) vào thư mục ./publish
-    # Đã bỏ tham số PublishSingleFile
-    - name: Publish Multi-File
+    # Cài đặt MSBuild (cho các project .NET Framework cũ trong Solution)
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v2
+
+    # --- BƯỚC 2: Build & Restore ---
+
+    - name: Restore NuGet packages
+      run: nuget restore ${{ env.Solution_Name }}
+
+    # Build toàn bộ Solution bằng MSBuild để đảm bảo các dependency .NET Framework được build xong
+    - name: Build Solution (MSBuild)
+      run: msbuild ${{ env.Solution_Name }} /p:Configuration=Release /p:Platform="Any CPU"
+
+    # --- BƯỚC 3: Publish App (Core logic) ---
+
+    # Chạy lệnh publish mà bạn yêu cầu. 
+    # Lưu ý: Tôi thêm "--output ./publish_output" để gom file vào một chỗ dễ đóng gói.
+    - name: Publish WPF App
       run: |
-        dotnet publish ${{ env.Project_Path }} -c Release -r win-x64 --self-contained true -p:AssemblyName=${{ env.App_Name }} -o ./publish
+        dotnet publish ${{ env.Project_Path }} `
+        -c Release `
+        -r win-x64 `
+        --self-contained true `
+        -p:PublishSingleFile=true `
+        -p:IncludeNativeLibrariesForSelfExtract=true `
+        --output ./publish_output
 
-    # 2. Nén toàn bộ thư mục ./publish thành file VirtualSofa.zip
-    # Dùng PowerShell có sẵn, không cần action bên ngoài
+    # --- BƯỚC 4: Đóng gói & Release ---
+
+    # Nén folder publish thành file zip (để người dùng tải về gọn nhẹ)
     - name: Zip Release
-      run: |
-        powershell Compress-Archive -Path ./publish/* -DestinationPath ./${{ env.App_Name }}.zip
+      uses: thedoctor0/zip-release@0.7.6
+      with:
+        type: 'zip'
+        filename: ${{ env.Output_Zip_Name }}
+        directory: './publish_output'
 
-    # 3. Tạo Release và upload file zip
-    - name: Create GitHub Release
-      if: startsWith(github.ref, 'refs/tags/')
+    # Cách 1: Upload dưới dạng Artifact (Tải về từ tab Actions) - Dùng cho mọi lần push
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: VirtualSofa-Build
+        path: ./publish_output/${{ env.Output_Zip_Name }}
+
+    # Cách 2: Tạo GitHub Release (Chỉ chạy khi có Tag hoặc chỉnh sửa điều kiện if)
+    # Phần này sẽ tạo một Release chính thức trên GitHub và đính kèm file zip
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/') # Chỉ chạy khi push tag (ví dụ v1.0)
       uses: softprops/action-gh-release@v1
       with:
-        files: ./${{ env.App_Name }}.zip
-        draft: false
-        prerelease: false
+        files: ./publish_output/${{ env.Output_Zip_Name }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
