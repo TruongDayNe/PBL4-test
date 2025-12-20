@@ -91,7 +91,7 @@ namespace Core.Networking
                 while (!token.IsCancellationRequested)
                 {
                     var receiveResult = await _udpClient.ReceiveAsync();
-                    Console.WriteLine($"[UdpPeer] Received packet from {receiveResult.RemoteEndPoint}, Size: {receiveResult.Buffer.Length}");
+                    // Console.WriteLine($"[UdpPeer] Received packet from {receiveResult.RemoteEndPoint}, Size: {receiveResult.Buffer.Length}"); // DISABLED
                     ProcessReceivedPacket(receiveResult.Buffer, receiveResult.RemoteEndPoint);
                 }
             }
@@ -113,7 +113,7 @@ namespace Core.Networking
                 return; // Bỏ qua gói tin hỏng hoặc không hợp lệ
             }
 
-            Console.WriteLine($"[UdpPeer] Valid packet - Type: 0x{header.PacketType:X2} ({(UdpPacketType)header.PacketType}), Seq: {header.SequenceNumber}, Size: {buffer.Length}");
+            // Console.WriteLine($"[UdpPeer] Valid packet - Type: 0x{header.PacketType:X2} ({(UdpPacketType)header.PacketType}), Seq: {header.SequenceNumber}, Size: {buffer.Length}"); // DISABLED
             Debug.WriteLine($"[UdpPeer.ProcessReceivedPacket] Received PacketType: {(UdpPacketType)header.PacketType} | Seq: {header.SequenceNumber}");
             _networkStats.LogPacketReceived(buffer.Length);
 

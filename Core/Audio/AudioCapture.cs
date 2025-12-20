@@ -74,27 +74,27 @@ namespace RealTimeUdpStream.Core.Audio
                     _waveIn = loopback;
                     _captureFormat = loopback.WaveFormat; // May be 32-bit float
                     
-                    Console.WriteLine($"========== SYSTEM AUDIO CAPTURE INITIALIZED ==========");
-                    Console.WriteLine($"Capture format: {_captureFormat}");
-                    Console.WriteLine($"  - SampleRate: {_captureFormat.SampleRate} Hz");
-                    Console.WriteLine($"  - Channels: {_captureFormat.Channels}");
-                    Console.WriteLine($"  - BitsPerSample: {_captureFormat.BitsPerSample}");
-                    Console.WriteLine($"  - Encoding: {_captureFormat.Encoding}");
-                    Console.WriteLine($"Target format: {StandardFormat}");
-                    Console.WriteLine($"  - SampleRate: {StandardFormat.SampleRate} Hz");
-                    Console.WriteLine($"  - Channels: {StandardFormat.Channels}");
-                    Console.WriteLine($"  - BitsPerSample: {StandardFormat.BitsPerSample}");
-                    Console.WriteLine($"  - Encoding: {StandardFormat.Encoding}");
+                    // Console.WriteLine($"========== SYSTEM AUDIO CAPTURE INITIALIZED =========="); // DISABLED
+                    // Console.WriteLine($"Capture format: {_captureFormat}");
+                    // Console.WriteLine($"  - SampleRate: {_captureFormat.SampleRate} Hz");
+                    // Console.WriteLine($"  - Channels: {_captureFormat.Channels}");
+                    // Console.WriteLine($"  - BitsPerSample: {_captureFormat.BitsPerSample}");
+                    // Console.WriteLine($"  - Encoding: {_captureFormat.Encoding}");
+                    // Console.WriteLine($"Target format: {StandardFormat}");
+                    // Console.WriteLine($"  - SampleRate: {StandardFormat.SampleRate} Hz");
+                    // Console.WriteLine($"  - Channels: {StandardFormat.Channels}");
+                    // Console.WriteLine($"  - BitsPerSample: {StandardFormat.BitsPerSample}");
+                    // Console.WriteLine($"  - Encoding: {StandardFormat.Encoding}");
                     
                     if (_captureFormat.Encoding == WaveFormatEncoding.IeeeFloat && _captureFormat.BitsPerSample == 32)
                     {
-                        Console.WriteLine("⚠️  32-bit float detected - WILL CONVERT to 16-bit PCM");
+                        // Console.WriteLine("⚠️  32-bit float detected - WILL CONVERT to 16-bit PCM"); // DISABLED
                     }
                     else
                     {
-                        Console.WriteLine("✓ Format compatible");
+                        // Console.WriteLine("✓ Format compatible"); // DISABLED
                     }
-                    Console.WriteLine($"====================================================");
+                    // Console.WriteLine($"===================================================="); // DISABLED
                     break;
 
                 default:
@@ -203,7 +203,7 @@ namespace RealTimeUdpStream.Core.Audio
                 if (_inputType == AudioInputType.SystemAudio && _captureFormat.SampleRate != StandardFormat.SampleRate)
                 {
                     // Console.WriteLine($"⚠️ SAMPLE RATE MISMATCH! Captured: {_captureFormat.SampleRate}Hz, Target: {StandardFormat.SampleRate}Hz"); // TAT LOG
-                    Console.WriteLine($"⚠️ THIS WILL CAUSE PITCH SHIFT! Need resampling!");
+                    // Console.WriteLine($"⚠️ THIS WILL CAUSE PITCH SHIFT! Need resampling!"); // DISABLED
                     // TODO: Add resampling
                 }
                 
