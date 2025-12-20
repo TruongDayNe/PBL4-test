@@ -251,6 +251,7 @@ namespace RealTimeUdpStream.Core.Input
                     string.IsNullOrWhiteSpace(config.KeyboardMapping[keyName]))
                 {
                     // Phím không có mapping hoặc mapping trống → không gửi
+                    Console.WriteLine($"[KeyboardManager] ✓ Skipping {keyName} - no mapping or empty");
                     Debug.WriteLine($"[KeyboardManager] Skipping {keyName} - no mapping or empty");
                     return;
                 }
