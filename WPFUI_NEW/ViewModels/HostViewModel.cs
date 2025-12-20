@@ -58,6 +58,8 @@ namespace WPFUI_NEW.ViewModels
         [ObservableProperty] private string _streamButtonContent = "BẮT ĐẦU STREAM";
         [ObservableProperty] private string _statusText = "Đang chờ kết nối...";
         [ObservableProperty] private string _hostIpAddress = "Đang lấy IP...";
+        [ObservableProperty] private string _hostFpsText = "0 FPS";
+        private int _sentFrameCount = 0; // Biến đếm frame gửi đi
 
         // --- COLLECTIONS ---
         public ObservableCollection<ClientRequestViewModel> PendingClients { get; }
@@ -299,6 +301,11 @@ namespace WPFUI_NEW.ViewModels
             {
                 var snapshot = _sharedUdpPeer.Stats.GetSnapshot();
                 HostBitrateText = (snapshot.SentBitrateKbps / 1024.0).ToString("F1");
+                // --- TÍNH FPS ---
+                // Lấy giá trị hiện tại và reset về 0
+                int currentFps = System.Threading.Interlocked.Exchange(ref _sentFrameCount, 0);
+                HostFpsText = $"{currentFps} FPS";
+
                 ClientCount = ConnectedClients.Count;
             }
         }
@@ -385,6 +392,16 @@ namespace WPFUI_NEW.ViewModels
                         UpdateStatusText();
                     }
                 });
+            }
+            else if (packet.Header.PacketType == (byte)UdpPacketType.Ping)
+            {
+                // Khi nhận được Ping từ Client, gửi trả lại chính gói đó (Pong)
+                // để Client tính toán RTT.
+                if (_sharedUdpPeer != null)
+                {
+                    // Fire-and-forget gửi trả lại
+                    _ = _sharedUdpPeer.SendToAsync(new UdpPacket(UdpPacketType.Ping, 0), packet.Source);
+                }
             }
         }
 
@@ -510,6 +527,8 @@ namespace WPFUI_NEW.ViewModels
 
         private void HandleFrameCaptured(Image frame)
         {
+            System.Threading.Interlocked.Increment(ref _sentFrameCount);
+
             var source = ToBitmapSource(frame);
             if (source != null) App.Current.Dispatcher.BeginInvoke(() => PreviewImage = source);
             frame.Dispose();

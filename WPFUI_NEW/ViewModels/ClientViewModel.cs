@@ -39,6 +39,11 @@ namespace WPFUI_NEW.ViewModels
         [ObservableProperty] private string _toastMessage = "";
         [ObservableProperty] private bool _isToastVisible = false;
         [ObservableProperty] private string _toastKeyHint = ""; // Ví dụ: "Ctrl + M"
+        [ObservableProperty] private string _fpsText = "0 FPS";
+        private int _receivedFrameCount = 0;
+
+        // Biến lưu thời gian gửi Ping để tính RTT thủ công (nếu NetworkStats không tự tính đúng với custom packet)
+        private long _lastPingSentTick = 0;
 
         // === COMMANDS MỚI ===
         public IRelayCommand ToggleMenuCommand { get; }
@@ -167,6 +172,24 @@ namespace WPFUI_NEW.ViewModels
                     _ = ToggleConnectionAsync();
                 });
             }
+            // --- XỬ LÝ PING REPLY ---
+            if (packet.Header.PacketType == (byte)UdpPacketType.Ping)
+            {
+                // Tính toán RTT ngay lập tức
+                long now = DateTime.UtcNow.Ticks;
+                long rttTicks = now - _lastPingSentTick;
+                double rttMs = TimeSpan.FromTicks(rttTicks).TotalMilliseconds;
+
+                // Cập nhật UI (phải Invoke vì đang ở luồng mạng)
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    // Làm mượt con số ping một chút hoặc hiển thị trực tiếp
+                    PingText = $"{rttMs:F0} ms";
+                });
+
+                // (Tùy chọn) Cập nhật ngược lại vào NetworkStats để thống kê chung
+                _sharedUdpPeer?.Stats.UpdateRtt(_lastPingSentTick / TimeSpan.TicksPerMillisecond);
+            }
         }
 
         private async Task ToggleConnectionAsync()
@@ -287,6 +310,8 @@ namespace WPFUI_NEW.ViewModels
             if (_hostEndPoint != null)
             {
                 var pingPacket = new UdpPacket(UdpPacketType.Ping, 0);
+                // Lưu thời gian gửi
+                _lastPingSentTick = DateTime.UtcNow.Ticks;
                 // Gửi và không cần chờ (fire-and-forget)
                 _ = _sharedUdpPeer.SendToAsync(pingPacket, _hostEndPoint);
             }
@@ -294,15 +319,19 @@ namespace WPFUI_NEW.ViewModels
             // Dùng thuộc tính 'Stats' từ UdpPeer chung
             var snapshot = _sharedUdpPeer.Stats.GetSnapshot();
 
-            // Cập nhật các thuộc tính UI (giữ nguyên)
-            PingText = $"{snapshot.Rtt.TotalMilliseconds:F0} ms";
+            if (PingText == "---") // Chỉ dùng snapshot nếu chưa có giá trị thực
+                PingText = $"{snapshot.Rtt.TotalMilliseconds:F0} ms";
             BitrateText = $"{snapshot.ReceivedBitrateKbps} Kbps";
             LossText = $"{snapshot.PacketLossRate:F1} %";
+            // --- TÍNH FPS ---
+            int currentFps = System.Threading.Interlocked.Exchange(ref _receivedFrameCount, 0);
+            FpsText = $"{currentFps} FPS";
         }
 
         private void HandleFrameReady(BitmapSource frameSource)
         {
             // Logic y hệt HostViewModel:
+            System.Threading.Interlocked.Increment(ref _receivedFrameCount);
             // Gửi ảnh nhận được từ luồng mạng về luồng UI
             // Dùng BeginInvoke để không khóa luồng nhận dữ liệu
             App.Current.Dispatcher.BeginInvoke(new Action(() =>
