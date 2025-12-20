@@ -300,7 +300,13 @@ namespace RealTimeUdpStream.Core.Util
         public static void ReloadConfig()
         {
             Debug.WriteLine("🔄 Reloading config...");
+            Console.WriteLine("🔄 Reloading config...");
             LoadConfig();
+            
+            // Fire event để notify các manager áp dụng config mới
+            OnConfigChanged?.Invoke();
+            Console.WriteLine("✓ Config reloaded and applied!");
+            Debug.WriteLine("✓ Config reloaded and applied!");
         }
     }
 }
