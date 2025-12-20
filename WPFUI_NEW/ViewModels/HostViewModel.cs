@@ -393,16 +393,6 @@ namespace WPFUI_NEW.ViewModels
                     }
                 });
             }
-            else if (packet.Header.PacketType == (byte)UdpPacketType.Ping)
-            {
-                // Khi nhận được Ping từ Client, gửi trả lại chính gói đó (Pong)
-                // để Client tính toán RTT.
-                if (_sharedUdpPeer != null)
-                {
-                    // Fire-and-forget gửi trả lại
-                    _ = _sharedUdpPeer.SendToAsync(new UdpPacket(UdpPacketType.Ping, 0), packet.Source);
-                }
-            }
         }
 
         private async Task ToggleStreamingAsync()
