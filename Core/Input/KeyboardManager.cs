@@ -159,7 +159,8 @@ namespace RealTimeUdpStream.Core.Input
             }
             Console.WriteLine("========================================");
             
-            _keyboardSimulator = new KeyboardSimulator(keyMapping);
+            // Nếu không có mapping nào hợp lệ, truyền null để sử dụng default mapping
+            _keyboardSimulator = new KeyboardSimulator(keyMapping.Count > 0 ? keyMapping : null);
 
             // Subscribe to network events
             _udpPeer.OnPacketReceived += HandleReceivedPacket;

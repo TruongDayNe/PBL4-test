@@ -26,21 +26,12 @@ namespace RealTimeUdpStream.Core.Input
 
         public KeyboardSimulator(Dictionary<VirtualKey, VirtualKey> keyMapping = null)
         {
-            if (keyMapping == null)
+            if (keyMapping == null || keyMapping.Count == 0)
             {
-                // Ánh xạ mặc định: WASD (Client) -> TFGH (Host)
-                _keyMapping = new Dictionary<VirtualKey, VirtualKey>
-                {
-                    { VirtualKey.W, VirtualKey.T },
-                    { VirtualKey.A, VirtualKey.F },
-                    { VirtualKey.S, VirtualKey.G },
-                    { VirtualKey.D, VirtualKey.H },
-                    { VirtualKey.Space, VirtualKey.Space },
-                    { VirtualKey.Shift, VirtualKey.Shift },
-                    { VirtualKey.Ctrl, VirtualKey.Ctrl }
-                };
-                Console.WriteLine("[KeyboardSimulator] Using DEFAULT key mapping (no config provided)");
-                Debug.WriteLine("[KeyboardSimulator] Using DEFAULT key mapping (no config provided)");
+                // Không có mapping nào → Không map phím nào cả
+                _keyMapping = new Dictionary<VirtualKey, VirtualKey>();
+                Console.WriteLine("[KeyboardSimulator] No key mapping configured - NO KEYS WILL BE TRANSMITTED");
+                Debug.WriteLine("[KeyboardSimulator] No key mapping configured - NO KEYS WILL BE TRANSMITTED");
             }
             else
             {
