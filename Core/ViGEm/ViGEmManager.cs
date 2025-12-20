@@ -16,7 +16,7 @@ namespace RealTimeUdpStream.Core.ViGEm
         private readonly UdpPeer _udpPeer;
         private readonly bool _isClientMode; // true = Client (capture), false = Host (simulate)
 
-        private IJKLKeyboardCapture _keyboardCapture; // Dùng IJKLKeyboardCapture thay vì KeyboardCapture
+        private KeyboardCapture _keyboardCapture; // Dùng KeyboardCapture + filter theo config
         private ViGEmController _vigemController;
         private IPEndPoint _targetEndPoint;
         private bool _disposed = false;
@@ -73,13 +73,13 @@ namespace RealTimeUdpStream.Core.ViGEm
 
             try
             {
-                _keyboardCapture = new IJKLKeyboardCapture(); // Dùng IJKLKeyboardCapture - chỉ capture IJKL
+                _keyboardCapture = new KeyboardCapture(); // Dùng KeyboardCapture - capture tất cả, filter theo config
                 _keyboardCapture.OnKeyEvent += HandleKeyEvent;
                 _keyboardCapture.StartCapture();
 
                 _isCapturing = true;
-                OnStatusChanged?.Invoke("ViGEm capture started (IJKL only)");
-                Console.WriteLine("[ViGEmManager] ViGEm capture started - CHỈ capture phím IJKL");
+                OnStatusChanged?.Invoke("ViGEm capture started (config-based)");
+                Console.WriteLine("[ViGEmManager] ViGEm capture started - Keys filtered by ControllerMapping config");
                 Debug.WriteLine("[ViGEmManager] ViGEm capture started");
             }
             catch (Exception ex)
@@ -188,10 +188,18 @@ namespace RealTimeUdpStream.Core.ViGEm
             {
                 // Load config để kiểm tra xem phím này có controller mapping không
                 var config = ConfigHelper.LoadConfig();
-                if (config?.ControllerMapping != null && 
-                    config.ControllerMapping.ContainsKey(keyEvent.Key.ToString()))
+                string keyName = keyEvent.Key.ToString();
+                
+                // FILTER: Chỉ gửi key có trong ControllerMapping
+                if (config?.ControllerMapping == null || 
+                    !config.ControllerMapping.ContainsKey(keyName))
                 {
-                    Console.WriteLine($"[ViGEmManager] Sending key {keyEvent.Key} {keyEvent.Action} to {_targetEndPoint}");
+                    // Key không có mapping trong ControllerMapping → bỏ qua
+                    Console.WriteLine($"[ViGEmManager] ✓ Skipping {keyName} - not in ControllerMapping");
+                    return;
+                }
+                
+                Console.WriteLine($"[ViGEmManager] Sending key {keyEvent.Key} {keyEvent.Action} to {_targetEndPoint}");
 
                     // Serialize KeyEvent
                     byte[] data = SerializeKeyEvent(keyEvent);
@@ -223,7 +231,6 @@ namespace RealTimeUdpStream.Core.ViGEm
                             OnError?.Invoke(ex);
                         }
                     });
-                }
             }
             catch (Exception ex)
             {

@@ -161,7 +161,6 @@
     <Compile Include="Audio\OpusEncoder.cs" />
     <Compile Include="Audio\OpusDecoder.cs" />
     <Compile Include="Input\KeyboardCapture.cs" />
-    <Compile Include="Input\IJKLKeyboardCapture.cs" />
     <Compile Include="Input\KeyboardSimulator.cs" />
     <Compile Include="Input\KeyboardManager.cs" />
     <Compile Include="ViGEm\ViGEmController.cs" />
