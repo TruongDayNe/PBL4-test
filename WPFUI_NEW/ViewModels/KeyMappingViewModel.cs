@@ -340,7 +340,10 @@ namespace WPFUI_NEW.ViewModels
                 // Save to project root file
                 config.SaveToFile(configPath);
                 
-                Console.WriteLine("✓ Mappings saved successfully!");
+                // Reload config để áp dụng thay đổi ngay lập tức
+                ConfigHelper.ReloadConfig();
+                
+                Console.WriteLine("✓ Mappings saved and reloaded successfully!");
 
                 // Show success message
                 System.Windows.MessageBox.Show(
