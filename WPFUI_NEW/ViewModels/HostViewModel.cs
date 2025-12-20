@@ -301,7 +301,7 @@ namespace WPFUI_NEW.ViewModels
             {
                 var snapshot = _sharedUdpPeer.Stats.GetSnapshot();
                 HostBitrateText = (snapshot.SentBitrateKbps / 1024.0).ToString("F1");
-                // --- TÍNH FPS ---
+
                 // Lấy giá trị hiện tại và reset về 0
                 int currentFps = System.Threading.Interlocked.Exchange(ref _sentFrameCount, 0);
                 HostFpsText = $"{currentFps} FPS";

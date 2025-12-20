@@ -33,20 +33,18 @@ namespace WPFUI_NEW.ViewModels
         // === CÁC THUỘC TÍNH UI MỚI (Overlay Style) ===
         [ObservableProperty] private bool _isMenuVisible = true; // Trạng thái thanh Bar
         [ObservableProperty] private bool _isStatsVisible = false; // Trạng thái bảng Ping/FPS
-        [ObservableProperty] private bool _isMicMuted = false;   // Trạng thái Mic
 
         // Toast Notification
         [ObservableProperty] private string _toastMessage = "";
         [ObservableProperty] private bool _isToastVisible = false;
         [ObservableProperty] private string _toastKeyHint = ""; // Ví dụ: "Ctrl + M"
         [ObservableProperty] private string _fpsText = "0 FPS";
+        [ObservableProperty] private string _fecText = "0 pkts";
         private int _receivedFrameCount = 0;
 
         // === COMMANDS MỚI ===
         public IRelayCommand ToggleMenuCommand { get; }
         public IRelayCommand ToggleStatsCommand { get; }
-        public IRelayCommand ToggleMicCommand { get; }
-        public IRelayCommand ToggleMouseModeCommand { get; }
 
         // --- Thuộc tính cho Telemetry ---
         [ObservableProperty] private string _pingText = "---";
@@ -77,8 +75,6 @@ namespace WPFUI_NEW.ViewModels
             ConnectCommand = new AsyncRelayCommand(ToggleConnectionAsync);
             ToggleMenuCommand = new RelayCommand(ToggleMenu);
             ToggleStatsCommand = new RelayCommand(ToggleStats);
-            ToggleMicCommand = new RelayCommand(ToggleMic);
-            ToggleMouseModeCommand = new RelayCommand(ToggleMouseMode);
 
             // Initialize non-nullable fields
             _screenReceiver = null!; // Mark as nullable or initialize properly
@@ -111,25 +107,6 @@ namespace WPFUI_NEW.ViewModels
         {
             IsStatsVisible = !IsStatsVisible;
             ShowToast(IsStatsVisible ? "Đã bật Overlay Thông số" : "Đã tắt Overlay Thông số");
-        }
-
-        private void ToggleMic()
-        {
-            if (_audioManager == null)
-            {
-                ShowToast("Chưa kết nối đến Host!");
-                return;
-            }
-
-            IsMicMuted = !IsMicMuted;
-            _audioManager.IsMuted = IsMicMuted; // Cập nhật xuống AudioManager
-            ShowToast(IsMicMuted ? "Đã tắt Microphone" : "Đã bật Microphone");
-        }
-
-        private void ToggleMouseMode()
-        {
-            // TODO: Tích hợp logic khóa chuột thực tế tại đây
-            ShowToast("Chế độ chuột: Chưa hỗ trợ (Demo)");
         }
 
         // Hàm hiển thị thông báo tự tắt sau 2.5s
@@ -301,6 +278,7 @@ namespace WPFUI_NEW.ViewModels
             PingText = $"{snapshot.Rtt.TotalMilliseconds:F0} ms";
             BitrateText = $"{snapshot.ReceivedBitrateKbps} Kbps";
             LossText = $"{snapshot.PacketLossRate:F1} %";
+            FecText = $"{snapshot.FecPacketsRecoveredPerSec} pkts";
 
             int currentFps = System.Threading.Interlocked.Exchange(ref _receivedFrameCount, 0);
             FpsText = $"{currentFps} FPS";
