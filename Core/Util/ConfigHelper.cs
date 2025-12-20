@@ -51,9 +51,9 @@ namespace RealTimeUdpStream.Core.Util
             {
                 if (configPath == null)
                 {
-                    // LUÔN dùng project root file, không dùng bin copy
-                    configPath = GetProjectRootConfigPath();
-                    Console.WriteLine($"[ConfigHelper] Using project root config: {configPath}");
+                    // Dùng file trong bin folder (cùng folder với .exe)
+                    configPath = KeyMappingConfig.GetDefaultConfigPath();
+                    Console.WriteLine($"[ConfigHelper] Using bin config: {configPath}");
                 }
 
                 Console.WriteLine($"[ConfigHelper] Loading config from: {configPath}");
@@ -231,8 +231,8 @@ namespace RealTimeUdpStream.Core.Util
             // Check xem file có thay đổi không (so sánh timestamp)
             try
             {
-                // LUÔN dùng project root file
-                var configPath = _watchedConfigPath ?? GetProjectRootConfigPath();
+                // Dùng file trong bin (cùng folder với .exe)
+                var configPath = _watchedConfigPath ?? KeyMappingConfig.GetDefaultConfigPath();
                 if (File.Exists(configPath))
                 {
                     var fileTime = File.GetLastWriteTime(configPath);

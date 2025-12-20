@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RealTimeUdpStream.Core.Models;
 using RealTimeUdpStream.Core.Util;
 using System;
 using System.Collections.Generic;
@@ -332,12 +333,12 @@ namespace WPFUI_NEW.ViewModels
                 // Update controller mappings
                 UpdateControllerMappings(config);
 
-                // Get project root config path from ConfigHelper
-                string configPath = ConfigHelper.GetProjectRootConfigPath();
+                // Save to bin folder (same folder as .exe) - app will use this file
+                string configPath = KeyMappingConfig.GetDefaultConfigPath();
 
                 Console.WriteLine($"[KeyMappingViewModel] Saving to: {configPath}");
 
-                // Save to project root file
+                // Save to bin file
                 config.SaveToFile(configPath);
                 
                 // Reload config để áp dụng thay đổi ngay lập tức
