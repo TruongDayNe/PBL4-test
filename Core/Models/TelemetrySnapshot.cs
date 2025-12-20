@@ -9,5 +9,6 @@ public class TelemetrySnapshot
     public long SentBitrateKbps { get; set; }
     public long ReceivedBitrateKbps { get; set; }
     public double AverageLatencyMs { get; set; }
+    public long FecPacketsRecoveredPerSec { get; set; }
 
 }

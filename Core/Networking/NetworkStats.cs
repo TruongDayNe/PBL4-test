@@ -123,7 +123,8 @@ namespace RealTimeUdpStream.Core.Networking
                 SentBitrateKbps = _lastSentBitrateKbps,
                 ReceivedBitrateKbps = _lastReceivedBitrateKbps,
                 PacketLossRate = packetLossRate * 100.0,
-                AverageLatencyMs = rtt.TotalMilliseconds
+                AverageLatencyMs = rtt.TotalMilliseconds,
+                FecPacketsRecoveredPerSec = _lastFecPacketsRecovered
             };
         }
     }

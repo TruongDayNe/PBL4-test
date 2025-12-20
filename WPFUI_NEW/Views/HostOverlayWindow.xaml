@@ -102,7 +102,7 @@
                 </Border>
 
                 <StackPanel>
-                    <TextBlock Text="60" Style="{StaticResource StatValue}"/>
+                    <TextBlock Text="30" Style="{StaticResource StatValue}"/>
                     <TextBlock Text="FPS" Style="{StaticResource StatLabel}"/>
                 </StackPanel>
 

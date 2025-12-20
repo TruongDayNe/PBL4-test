@@ -269,13 +269,6 @@
                                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding DisplayName}" 
                                                        Foreground="{StaticResource TextPrimaryColor}" FontWeight="Bold" FontSize="14"/>
-
-                                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                                                <TextBlock Text="{Binding Ping, StringFormat='Ping: {0}ms'}" 
-                                                           Foreground="{StaticResource AcceptColor}" FontWeight="SemiBold"/>
-                                                <TextBlock Text="{Binding PacketLoss, StringFormat='Loss: {0}%'}" 
-                                                           Foreground="{StaticResource DestructiveColor}" FontWeight="SemiBold" Margin="15,0,0,0"/>
-                                            </StackPanel>
                                         </StackPanel>
 
                                         <Button Grid.Column="1" 
