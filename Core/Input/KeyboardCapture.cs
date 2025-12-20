@@ -24,13 +24,83 @@ namespace RealTimeUdpStream.Core.Input
 
         public KeyboardCapture()
         {
-            // Khởi tạo CHỈ với các phím WASD
+            // Khởi tạo tất cả phím thường dùng cho game streaming
             _previousKeyStates = new Dictionary<VirtualKey, bool>
             {
+                // Movement keys (WASD)
                 { VirtualKey.W, false },
                 { VirtualKey.A, false },
                 { VirtualKey.S, false },
-                { VirtualKey.D, false }
+                { VirtualKey.D, false },
+                
+                // Action keys (QERTFGCVXZB)
+                { VirtualKey.Q, false },
+                { VirtualKey.E, false },
+                { VirtualKey.R, false },
+                { VirtualKey.T, false },
+                { VirtualKey.F, false },
+                { VirtualKey.G, false },
+                { VirtualKey.C, false },
+                { VirtualKey.V, false },
+                { VirtualKey.X, false },
+                { VirtualKey.Z, false },
+                { VirtualKey.B, false },
+                { VirtualKey.H, false },
+                
+                // Additional keys for controller mapping (IJKLMNOPUY)
+                { VirtualKey.I, false },
+                { VirtualKey.J, false },
+                { VirtualKey.K, false },
+                { VirtualKey.L, false },
+                { VirtualKey.M, false },
+                { VirtualKey.N, false },
+                { VirtualKey.O, false },
+                { VirtualKey.P, false },
+                { VirtualKey.U, false },
+                { VirtualKey.Y, false },
+                
+                // Modifier keys (Left/Right variants)
+                { VirtualKey.LShift, false },
+                { VirtualKey.RShift, false },
+                { VirtualKey.LCtrl, false },
+                { VirtualKey.RCtrl, false },
+                { VirtualKey.LAlt, false },
+                { VirtualKey.RAlt, false },
+                { VirtualKey.Space, false },
+                { VirtualKey.Tab, false },
+                { VirtualKey.CapsLock, false },
+                { VirtualKey.Enter, false },
+                { VirtualKey.Escape, false },
+                
+                // Number keys (1-0)
+                { VirtualKey.D1, false },
+                { VirtualKey.D2, false },
+                { VirtualKey.D3, false },
+                { VirtualKey.D4, false },
+                { VirtualKey.D5, false },
+                { VirtualKey.D6, false },
+                { VirtualKey.D7, false },
+                { VirtualKey.D8, false },
+                { VirtualKey.D9, false },
+                { VirtualKey.D0, false },
+                
+                // Arrow keys
+                { VirtualKey.Left, false },
+                { VirtualKey.Up, false },
+                { VirtualKey.Right, false },
+                { VirtualKey.Down, false },
+                
+                // Numpad keys
+                { VirtualKey.NumPad0, false },
+                { VirtualKey.NumPad1, false },
+                { VirtualKey.NumPad2, false },
+                { VirtualKey.NumPad3, false },
+                { VirtualKey.NumPad4, false },
+                { VirtualKey.NumPad5, false },
+                { VirtualKey.NumPad6, false },
+                { VirtualKey.NumPad7, false },
+                { VirtualKey.NumPad8, false },
+                { VirtualKey.NumPad9, false }
             };
         }
 

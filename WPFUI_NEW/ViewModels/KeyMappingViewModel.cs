@@ -115,10 +115,19 @@ namespace WPFUI_NEW.ViewModels
                 new KeyMappingItemViewModel("H", "H Key"),
                 new KeyMappingItemViewModel("B", "B Key"),
                 
+                // Additional keys (for controller mapping)
+                new KeyMappingItemViewModel("J", "J Key"),
+                new KeyMappingItemViewModel("K", "K Key"),
+                new KeyMappingItemViewModel("L", "L Key"),
+                new KeyMappingItemViewModel("M", "M Key"),
+                new KeyMappingItemViewModel("N", "N Key"),
+                new KeyMappingItemViewModel("O", "O Key"),
+                new KeyMappingItemViewModel("P", "P Key"),
+                new KeyMappingItemViewModel("U", "U Key"),
+                new KeyMappingItemViewModel("Y", "Y Key"),
+                
                 // Control keys
                 new KeyMappingItemViewModel("Space", "Space Bar"),
-                new KeyMappingItemViewModel("Ctrl", "Control"),
-                new KeyMappingItemViewModel("Alt", "Alt"),
                 new KeyMappingItemViewModel("Enter", "Enter"),
                 new KeyMappingItemViewModel("Escape", "Escape"),
                 
@@ -138,10 +147,13 @@ namespace WPFUI_NEW.ViewModels
             // Advanced Keys
             _advancedKeysList = new ObservableCollection<KeyMappingItemViewModel>
             {
-                // Shift variants
-                new KeyMappingItemViewModel("Shift", "Shift"),
+                // Modifier keys (Left/Right variants)
                 new KeyMappingItemViewModel("LShift", "Left Shift"),
                 new KeyMappingItemViewModel("RShift", "Right Shift"),
+                new KeyMappingItemViewModel("LCtrl", "Left Control"),
+                new KeyMappingItemViewModel("RCtrl", "Right Control"),
+                new KeyMappingItemViewModel("LAlt", "Left Alt"),
+                new KeyMappingItemViewModel("RAlt", "Right Alt"),
                 
                 // Special keys
                 new KeyMappingItemViewModel("Tab", "Tab"),
