@@ -77,7 +77,7 @@ namespace RealTimeUdpStream.Core.Util
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Failed to load config: {ex.Message}");
+                Console.WriteLine($"❌ CRITICAL: Failed to load config: {ex.Message}");
                 Console.WriteLine($"Exception type: {ex.GetType().Name}");
                 Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 
@@ -88,11 +88,13 @@ namespace RealTimeUdpStream.Core.Util
                     Console.WriteLine($"Inner stack trace: {ex.InnerException.StackTrace}");
                 }
                 
-                Debug.WriteLine($"❌ Failed to load config: {ex.Message}");
-                Debug.WriteLine("Using default config...");
-                Console.WriteLine("Using default config...");
-                _currentConfig = KeyMappingConfig.CreateDefault();
-                return _currentConfig;
+                Debug.WriteLine($"❌ CRITICAL: Failed to load config: {ex.Message}");
+                
+                // THROW EXCEPTION - không dùng default config nữa
+                throw new InvalidOperationException(
+                    "Failed to load keymapping.json. App cannot run without config file. " +
+                    "Please ensure keymapping.json exists and System.Text.Json dependencies are correct.", 
+                    ex);
             }
         }
 

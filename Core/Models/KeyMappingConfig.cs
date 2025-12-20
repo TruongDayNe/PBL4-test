@@ -30,38 +30,15 @@ namespace RealTimeUdpStream.Core.Models
         public AudioCodecSettings AudioSettings { get; set; } = new AudioCodecSettings();
 
         /// <summary>
-        /// Tạo cấu hình mặc định (WASD→TFGH, IJKL→Joystick, O→ButtonA)
+        /// Tạo cấu hình mặc định - ĐÃ XÓA, bắt buộc dùng file config
         /// </summary>
+        [Obsolete("Default config has been removed. App must use keymapping.json file.", true)]
         public static KeyMappingConfig CreateDefault()
         {
-            return new KeyMappingConfig
-            {
-                KeyboardMapping = new Dictionary<string, string>
-                {
-                    { "W", "T" },
-                    { "A", "F" },
-                    { "S", "G" },
-                    { "D", "H" }
-                },
-                ControllerMapping = new Dictionary<string, ControllerAction>
-                {
-                    { "I", new ControllerAction { Type = ControllerActionType.LeftStickUp } },
-                    { "J", new ControllerAction { Type = ControllerActionType.LeftStickLeft } },
-                    { "K", new ControllerAction { Type = ControllerActionType.LeftStickDown } },
-                    { "L", new ControllerAction { Type = ControllerActionType.LeftStickRight } },
-                    { "O", new ControllerAction { Type = ControllerActionType.ButtonA } },
-                    { "P", new ControllerAction { Type = ControllerActionType.ButtonB } },
-                    { "U", new ControllerAction { Type = ControllerActionType.ButtonX } },
-                    { "Y", new ControllerAction { Type = ControllerActionType.ButtonY } }
-                },
-                AudioSettings = new AudioCodecSettings
-                {
-                    Codec = "OPUS",
-                    Bitrate = 96000,
-                    SampleRate = 48000,
-                    Channels = 2
-                }
-            };
+            throw new NotSupportedException(
+                "CreateDefault() is no longer supported. " +
+                "App must load config from keymapping.json file. " +
+                "Please ensure the config file exists and is valid.");
         }
 
         /// <summary>
@@ -97,11 +74,11 @@ namespace RealTimeUdpStream.Core.Models
             {
                 if (!File.Exists(filePath))
                 {
-                    Console.WriteLine($"⚠️ Config file not found: {filePath}");
-                    Console.WriteLine("Creating default config...");
-                    var defaultConfig = CreateDefault();
-                    defaultConfig.SaveToFile(filePath);
-                    return defaultConfig;
+                    Console.WriteLine($"❌ CRITICAL: Config file not found: {filePath}");
+                    throw new FileNotFoundException(
+                        $"Config file not found at: {filePath}. " +
+                        "Please ensure keymapping.json exists in the same folder as the .exe file.",
+                        filePath);
                 }
 
                 string json = File.ReadAllText(filePath);
@@ -120,8 +97,10 @@ namespace RealTimeUdpStream.Core.Models
                 
                 if (config == null)
                 {
-                    Console.WriteLine("⚠️ Failed to parse config, using default");
-                    return CreateDefault();
+                    Console.WriteLine("❌ CRITICAL: Failed to parse config - result is null");
+                    throw new InvalidDataException(
+                        $"Failed to deserialize config from {filePath}. " +
+                        "JSON file may be corrupted or invalid.");
                 }
 
                 Console.WriteLine($"✓ Config loaded from: {filePath}");
@@ -152,7 +131,7 @@ namespace RealTimeUdpStream.Core.Models
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Failed to load config: {ex.GetType().Name}");
+                Console.WriteLine($"❌ CRITICAL: Failed to load config: {ex.GetType().Name}");
                 Console.WriteLine($"   Message: {ex.Message}");
                 
                 if (ex.InnerException != null)
@@ -161,8 +140,11 @@ namespace RealTimeUdpStream.Core.Models
                 }
                 
                 Console.WriteLine($"   Stack: {ex.StackTrace?.Split('\n')[0]}"); // First line only
-                Console.WriteLine("Using default config...");
-                return CreateDefault();
+                
+                // RE-THROW - không dùng default config nữa
+                throw new InvalidOperationException(
+                    $"Failed to load config from {filePath}. See inner exception for details.", 
+                    ex);
             }
         }
 
