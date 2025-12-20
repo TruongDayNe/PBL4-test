@@ -27,6 +27,8 @@ namespace Core.Networking
 
         // Stats and Events
         private readonly NetworkStats _networkStats = new NetworkStats();
+        // Biến theo dõi Sequence để phát hiện mất gói
+        private uint _lastVideoSequence = 0;
         public NetworkStats Stats => _networkStats;
         public Action<UdpPacket> OnPacketReceived;
         public int MaximumTransferUnit { get; } = 1400; // Typical MTU for Ethernet
@@ -122,8 +124,29 @@ namespace Core.Networking
             switch ((UdpPacketType)header.PacketType)
             {
                 case UdpPacketType.Video:
-                    // Video đi qua logic ghép mảnh (FEC/Reassembly)
-                    // Console.WriteLine($"[UdpPeer] Processing Video packet"); // TAT LOG
+                    // === LOGIC MỚI: PHÁT HIỆN MẤT GÓI (GAP DETECTION) ===
+                    // Nếu Sequence hiện tại lớn hơn Sequence trước đó + 1 -> Có gói bị mất ở giữa
+                    // (Chỉ áp dụng khi Sequence > 0 để tránh lúc mới khởi động)
+                    if (_lastVideoSequence > 0 && header.SequenceNumber > _lastVideoSequence + 1)
+                    {
+                        // Giả sử mất (Sequence hiện tại - Sequence cũ - 1) frames
+                        // Mỗi frame có thể gồm nhiều chunks, ở đây ta ước lượng số frame bị mất
+                        int lostFrames = (int)(header.SequenceNumber - _lastVideoSequence - 1);
+
+                        // Để đơn giản và tránh số quá lớn khi reset, giới hạn max log
+                        if (lostFrames < 100)
+                        {
+                            // Ta log ít nhất 1 gói mất cho mỗi frame sequence bị nhảy qua
+                            _networkStats.LogLoss(lostFrames);
+                        }
+                    }
+
+                    // Cập nhật last sequence (xử lý trường hợp reset hoặc wrap-around nếu cần)
+                    if (header.SequenceNumber > _lastVideoSequence || _lastVideoSequence - header.SequenceNumber > 1000)
+                    {
+                        _lastVideoSequence = header.SequenceNumber;
+                    }
+
                     AddToFecGroup(packet);
                     HandleDataPacket(packet);
                     break;
@@ -157,18 +180,16 @@ namespace Core.Networking
                     OnPacketReceived?.Invoke(packet);
                     break;
                 case UdpPacketType.Ping:
-                    // Nhận được Ping, gửi lại Pong với cùng Timestamp
+                    // Logic Ping/Pong chuẩn của Peer: Trả lại Pong kèm timestamp gốc
                     var pongPacket = new UdpPacket(UdpPacketType.Pong, 0);
                     var pongHeader = pongPacket.Header;
-                    // Sửa đổi bản sao
                     pongHeader.TimestampMs = packet.Header.TimestampMs;
-                    // Gán toàn bộ bản sao đã sửa đổi trở lại
                     pongPacket.Header = pongHeader;
-                    _ = SendToAsync(pongPacket, source); // Gửi trả lại
+                    _ = SendToAsync(pongPacket, source);
                     break;
 
                 case UdpPacketType.Pong:
-                    // Nhận được Pong, cập nhật chỉ số RTT
+                    // Logic nhận Pong: Cập nhật RTT
                     _networkStats.UpdateRtt((long)packet.Header.TimestampMs);
                     break;
                 // Các loại packet khác có thể được xử lý ở đây

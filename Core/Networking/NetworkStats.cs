@@ -5,7 +5,6 @@ using RealTimeUdpStream.Core.Models;
 using System.Diagnostics;
 using System.Threading;
 
-
 namespace RealTimeUdpStream.Core.Networking
 {
     public class NetworkStats
@@ -13,19 +12,24 @@ namespace RealTimeUdpStream.Core.Networking
         private readonly ConcurrentQueue<long> _pingHistory = new ConcurrentQueue<long>();
         private readonly ConcurrentQueue<DateTime> _packetSentTimestamps = new ConcurrentQueue<DateTime>();
         private readonly ConcurrentQueue<DateTime> _packetReceivedTimestamps = new ConcurrentQueue<DateTime>();
+
+        // FEC recovered
         private long _fecPacketsRecovered = 0;
         private long _lastFecPacketsRecovered = 0;
 
-        //log để tính mất gói
+        // Packet Loss Counter (MỚI)
+        private long _packetsLost = 0;
+        private long _lastPacketsLost = 0;
+
+        //log để tính mất gói (giữ lại để tương thích, nhưng không dùng chính cho loss rate)
         private readonly ConcurrentDictionary<uint, (long timestamp, bool acked)> _packetLog = new ConcurrentDictionary<uint, (long, bool)>();
-        private readonly object _lock = new object();
 
         // --- BIẾN MỚI CHO BITRATE ---
         private long _bytesSentInSecond = 0;
         private long _bytesReceivedInSecond = 0;
         private long _lastSentBitrateKbps = 0;
         private long _lastReceivedBitrateKbps = 0;
-        // Timer để biết khi nào 1 giây trôi qua
+
         private readonly Stopwatch _bitrateTimer = Stopwatch.StartNew();
 
         public void UpdateRtt(long sentTimestampMs)
@@ -33,22 +37,31 @@ namespace RealTimeUdpStream.Core.Networking
             long now = (long)(DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond);
             long rttMs = now - sentTimestampMs;
 
-            _pingHistory.Enqueue(rttMs);
-            while (_pingHistory.Count > 10)
+            // Chỉ chấp nhận RTT dương và hợp lý (dưới 5 giây)
+            if (rttMs >= 0 && rttMs < 5000)
             {
-                _pingHistory.TryDequeue(out _);
+                _pingHistory.Enqueue(rttMs);
+                while (_pingHistory.Count > 10)
+                {
+                    _pingHistory.TryDequeue(out _);
+                }
             }
         }
+
         public void LogFecPacketRecovered()
         {
             Interlocked.Increment(ref _fecPacketsRecovered);
         }
 
+        // HÀM MỚI: Ghi nhận số gói bị mất do phát hiện hổng Sequence
+        public void LogLoss(int count)
+        {
+            Interlocked.Add(ref _packetsLost, count);
+        }
+
         public void LogPacketSent(uint sequenceNumber, int size)
         {
             _packetSentTimestamps.Enqueue(DateTime.UtcNow);
-            _packetLog.TryAdd(sequenceNumber, (DateTime.UtcNow.Ticks, false));
-
             Interlocked.Add(ref _bytesSentInSecond, size);
         }
 
@@ -58,78 +71,58 @@ namespace RealTimeUdpStream.Core.Networking
             Interlocked.Add(ref _bytesReceivedInSecond, size);
         }
 
-        public void LogPacketAcked(uint sequenceNumber)
-        {
-            if (_packetLog.TryGetValue(sequenceNumber, out var value))
-            {
-                _packetLog[sequenceNumber] = (value.timestamp, true);
-            }
-        }
-
         public TelemetrySnapshot GetSnapshot()
         {
+            // Dọn dẹp queue cũ
             var oneSecondAgo = DateTime.UtcNow.AddSeconds(-1);
             while (_packetSentTimestamps.TryPeek(out var timestamp) && timestamp < oneSecondAgo)
-            {
                 _packetSentTimestamps.TryDequeue(out _);
-            }
             while (_packetReceivedTimestamps.TryPeek(out var timestamp) && timestamp < oneSecondAgo)
-            {
                 _packetReceivedTimestamps.TryDequeue(out _);
-            }
 
+            // Tính RTT trung bình
             var rtt = _pingHistory.Count > 0 ? TimeSpan.FromMilliseconds(_pingHistory.Average()) : TimeSpan.Zero;
 
-            // TODO: Logic tính PacketLossRate cần được hoàn thiện ở UdpPeer
+            // Timer 1 giây để chốt số liệu Bitrate và Loss
             if (_bitrateTimer.ElapsedMilliseconds >= 1000)
             {
                 _lastSentBitrateKbps = (Interlocked.Exchange(ref _bytesSentInSecond, 0) * 8) / 1024;
                 _lastReceivedBitrateKbps = (Interlocked.Exchange(ref _bytesReceivedInSecond, 0) * 8) / 1024;
-                // === BẮT ĐẦU SỬA LỖI ===
-                // Lấy số gói FEC khôi phục được trong 1s qua và reset bộ đếm
-                _lastFecPacketsRecovered = Interlocked.Exchange(ref _fecPacketsRecovered, 0);
-                // === KẾT THÚC SỬA LỖI ===
 
-                // 2. Reset đồng hồ
+                // Lấy số liệu loss/recovered trong 1s qua và reset
+                _lastFecPacketsRecovered = Interlocked.Exchange(ref _fecPacketsRecovered, 0);
+                _lastPacketsLost = Interlocked.Exchange(ref _packetsLost, 0);
+
                 _bitrateTimer.Restart();
             }
 
-            // --- LOGIC MỚI: TÍNH MẤT GÓI (PACKET LOSS) ---
-            // === BẮT ĐẦU SỬA LỖI ===
-            // Thay thế hoàn toàn logic cũ
-
+            // --- TÍNH TOÁN PACKET LOSS RATE ---
             double packetLossRate = 0.0;
-            // Tổng số gói thực nhận = số gói nhận được + số gói FEC đã cứu
-            long totalPacketsInSecond = _packetReceivedTimestamps.Count + _lastFecPacketsRecovered;
 
-            if (totalPacketsInSecond > 0)
+            // Tổng số gói lẽ ra phải nhận = Thực nhận + Đã cứu (FEC) + Đã mất hẳn (Loss Gap)
+            long receivedCount = _packetReceivedTimestamps.Count;
+            long totalExpected = receivedCount + _lastPacketsLost; // FEC Recovered đã tính là "nhận được" trong logic FEC rồi hoặc tách riêng tùy ý
+
+            // Để chính xác:
+            // Loss Rate = (Lost + Recovered) / (Received + Lost + Recovered) 
+            // Hoặc nếu coi Recovered là thành công thì: Loss Rate = Lost / (Received + Lost)
+            // Ở đây ta tính tổng thể chất lượng mạng:
+            long totalEvents = receivedCount + _lastPacketsLost + _lastFecPacketsRecovered;
+
+            if (totalEvents > 0)
             {
-                // Tỷ lệ mất = (Số gói đã cứu) / (Tổng số gói)
-                packetLossRate = (double)_lastFecPacketsRecovered / totalPacketsInSecond;
+                // Tỷ lệ gói bị lỗi trên đường truyền (bao gồm cả gói cứu được và mất hẳn)
+                packetLossRate = (double)(_lastPacketsLost + _lastFecPacketsRecovered) / totalEvents;
             }
 
-            // Dọn dẹp _packetLog (vẫn giữ lại để không bị rò rỉ bộ nhớ)
-            var fiveSecondsAgo = DateTime.UtcNow.Ticks - (5 * TimeSpan.TicksPerSecond);
-            var keysToRemove = new System.Collections.Generic.List<uint>();
-            foreach (var entry in _packetLog)
-            {
-                if (entry.Value.timestamp < fiveSecondsAgo)
-                    keysToRemove.Add(entry.Key);
-            }
-            foreach (var key in keysToRemove)
-                _packetLog.TryRemove(key, out _);
-
-            // === KẾT THÚC SỬA LỖI ===
-
-            // Trả về kết quả
             return new TelemetrySnapshot
             {
                 Rtt = rtt,
                 PacketsSentPerSec = _packetSentTimestamps.Count,
-                PacketsReceivedPerSec = _packetReceivedTimestamps.Count,
+                PacketsReceivedPerSec = (int)receivedCount,
                 SentBitrateKbps = _lastSentBitrateKbps,
                 ReceivedBitrateKbps = _lastReceivedBitrateKbps,
-                PacketLossRate = packetLossRate * 100.0, // Chuyển sang %
+                PacketLossRate = packetLossRate * 100.0,
                 AverageLatencyMs = rtt.TotalMilliseconds
             };
         }
