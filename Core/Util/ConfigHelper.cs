@@ -15,6 +15,7 @@ namespace RealTimeUdpStream.Core.Util
         private static KeyMappingConfig _currentConfig;
         private static FileSystemWatcher _configWatcher;
         private static string _watchedConfigPath;
+        private static DateTime _lastLoadTime = DateTime.MinValue;
         
         /// <summary>
         /// Event fired khi config file thay đổi
@@ -72,6 +73,10 @@ namespace RealTimeUdpStream.Core.Util
                 {
                     SetupFileWatcher(configPath);
                 }
+                
+                // Lưu thời gian load
+                _lastLoadTime = DateTime.Now;
+                Console.WriteLine($"⏰ Config loaded at: {_lastLoadTime:HH:mm:ss.fff}");
 
                 return _currentConfig;
             }
@@ -188,6 +193,8 @@ namespace RealTimeUdpStream.Core.Util
 
                 // Reload config từ file gốc
                 _currentConfig = KeyMappingConfig.LoadFromFile(_watchedConfigPath);
+                _lastLoadTime = DateTime.Now;
+                
                 Console.WriteLine($"✓ Config reloaded from: {_watchedConfigPath}");
                 Console.WriteLine(_currentConfig.ToReadableString());
 
@@ -208,28 +215,44 @@ namespace RealTimeUdpStream.Core.Util
         /// </summary>
         public static KeyMappingConfig GetConfig()
         {
+            // Nếu chưa load lần nào, load ngay
             if (_currentConfig == null)
             {
                 Console.WriteLine("⚠️ [ConfigHelper.GetConfig] Config not loaded yet, loading from file...");
                 Debug.WriteLine("⚠️ Config not loaded yet, loading from file...");
                 LoadConfig();
+                return _currentConfig;
             }
 
-            Console.WriteLine($"[ConfigHelper.GetConfig] Returning config with {_currentConfig.KeyboardMapping.Count} keyboard mappings");
-            
-            // Log first mapping to verify
-            if (_currentConfig.KeyboardMapping.Count > 0)
+            // Check xem file có thay đổi không (so sánh timestamp)
+            try
             {
-                var first = _currentConfig.KeyboardMapping.First();
-                Console.WriteLine($"[ConfigHelper.GetConfig] First mapping: {first.Key} → {first.Value}");
-                
-                // Specifically check W mapping
-                if (_currentConfig.KeyboardMapping.ContainsKey("W"))
+                var configPath = _watchedConfigPath ?? KeyMappingConfig.GetDefaultConfigPath();
+                if (File.Exists(configPath))
                 {
-                    Console.WriteLine($"[ConfigHelper.GetConfig] ✓ W → {_currentConfig.KeyboardMapping["W"]}");
+                    var fileTime = File.GetLastWriteTime(configPath);
+                    if (fileTime > _lastLoadTime)
+                    {
+                        Console.WriteLine($"🔄 [ConfigHelper.GetConfig] File changed detected!");
+                        Console.WriteLine($"   File time: {fileTime:HH:mm:ss.fff}");
+                        Console.WriteLine($"   Last load: {_lastLoadTime:HH:mm:ss.fff}");
+                        Console.WriteLine("   Reloading config...");
+                        
+                        _currentConfig = KeyMappingConfig.LoadFromFile(configPath);
+                        _lastLoadTime = DateTime.Now;
+                        
+                        // Fire event để các component khác biết
+                        OnConfigChanged?.Invoke();
+                        
+                        Console.WriteLine($"✓ Config reloaded! W mapping: {(_currentConfig.KeyboardMapping.ContainsKey("W") ? _currentConfig.KeyboardMapping["W"] : "N/A")}");
+                    }
                 }
             }
-            
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠️ [ConfigHelper.GetConfig] Error checking file timestamp: {ex.Message}");
+            }
+
             return _currentConfig;
         }
 
