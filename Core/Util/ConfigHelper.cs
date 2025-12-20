@@ -50,7 +50,11 @@ namespace RealTimeUdpStream.Core.Util
             try
             {
                 if (configPath == null)
-                    configPath = KeyMappingConfig.GetDefaultConfigPath();
+                {
+                    // LUÔN dùng project root file, không dùng bin copy
+                    configPath = GetProjectRootConfigPath();
+                    Console.WriteLine($"[ConfigHelper] Using project root config: {configPath}");
+                }
 
                 Console.WriteLine($"[ConfigHelper] Loading config from: {configPath}");
                 _currentConfig = KeyMappingConfig.LoadFromFile(configPath);
@@ -227,22 +231,35 @@ namespace RealTimeUdpStream.Core.Util
             // Check xem file có thay đổi không (so sánh timestamp)
             try
             {
-                var configPath = _watchedConfigPath ?? KeyMappingConfig.GetDefaultConfigPath();
+                // LUÔN dùng project root file
+                var configPath = _watchedConfigPath ?? GetProjectRootConfigPath();
                 if (File.Exists(configPath))
                 {
                     var fileTime = File.GetLastWriteTime(configPath);
-                    if (fileTime > _lastLoadTime)
+                    
+                    // Reload nếu file time mới hơn last load time
+                    // Hoặc nếu last load time chưa được set (lần đầu)
+                    if (fileTime > _lastLoadTime || _lastLoadTime == DateTime.MinValue)
                     {
-                        Console.WriteLine($"🔄 [ConfigHelper.GetConfig] File changed detected!");
-                        Console.WriteLine($"   File time: {fileTime:HH:mm:ss.fff}");
-                        Console.WriteLine($"   Last load: {_lastLoadTime:HH:mm:ss.fff}");
-                        Console.WriteLine("   Reloading config...");
+                        bool isFirstLoad = (_lastLoadTime == DateTime.MinValue);
+                        
+                        // Chỉ log nếu không phải lần đầu
+                        if (!isFirstLoad)
+                        {
+                            Console.WriteLine($"🔄 [ConfigHelper.GetConfig] File changed detected!");
+                            Console.WriteLine($"   File time: {fileTime:HH:mm:ss.fff}");
+                            Console.WriteLine($"   Last load: {_lastLoadTime:HH:mm:ss.fff}");
+                            Console.WriteLine("   Reloading config...");
+                        }
                         
                         _currentConfig = KeyMappingConfig.LoadFromFile(configPath);
                         _lastLoadTime = DateTime.Now;
                         
-                        // Fire event để các component khác biết
-                        OnConfigChanged?.Invoke();
+                        // Fire event để các component khác biết (chỉ khi không phải lần đầu)
+                        if (!isFirstLoad)
+                        {
+                            OnConfigChanged?.Invoke();
+                        }
                         
                         Console.WriteLine($"✓ Config reloaded! W mapping: {(_currentConfig.KeyboardMapping.ContainsKey("W") ? _currentConfig.KeyboardMapping["W"] : "N/A")}");
                     }
@@ -326,6 +343,10 @@ namespace RealTimeUdpStream.Core.Util
         {
             Debug.WriteLine("🔄 Reloading config...");
             Console.WriteLine("🔄 Reloading config...");
+            
+            // Clear last load time để force reload lần tiếp theo
+            _lastLoadTime = DateTime.MinValue;
+            
             LoadConfig();
             
             // Fire event để notify các manager áp dụng config mới
