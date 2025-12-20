@@ -153,18 +153,18 @@ namespace Core.Networking
                 case UdpPacketType.Audio:
                     // SỬA LỖI: Audio là gói tin độc lập, gửi thẳng lên
                     // Console.WriteLine($"[UdpPeer] Processing Audio packet Seq={packet.Header.SequenceNumber}, Size={packet.Payload.Count}"); // TAT LOG
-                    Debug.WriteLine($"[UdpPeer] >>> AUDIO PACKET RECEIVED: Seq={packet.Header.SequenceNumber}, Subscribers={OnPacketReceived?.GetInvocationList().Length ?? 0}");
+                    //Debug.WriteLine($"[UdpPeer] >>> AUDIO PACKET RECEIVED: Seq={packet.Header.SequenceNumber}, Subscribers={OnPacketReceived?.GetInvocationList().Length ?? 0}");
                     OnPacketReceived?.Invoke(packet); // Không qua HandleDataPacket
-                    Debug.WriteLine($"[UdpPeer] >>> Audio packet dispatched to subscribers");
+                    //Debug.WriteLine($"[UdpPeer] >>> Audio packet dispatched to subscribers");
                     break;
                 case UdpPacketType.Keyboard:
                     // Keyboard packet - goi tin doc lap, gui thang len
-                    Console.WriteLine($"[UdpPeer] Nhan duoc KEYBOARD packet - chuyen cho subscribers");
+                    //Console.WriteLine($"[UdpPeer] Nhan duoc KEYBOARD packet - chuyen cho subscribers");
                     OnPacketReceived?.Invoke(packet);
                     break;
                 case UdpPacketType.ViGEm:
                     // ViGEm controller packet - goi tin doc lap, gui thang len
-                    Console.WriteLine($"[UdpPeer] Nhan duoc ViGEm packet - chuyen cho subscribers");
+                    //Console.WriteLine($"[UdpPeer] Nhan duoc ViGEm packet - chuyen cho subscribers");
                     OnPacketReceived?.Invoke(packet);
                     break;
                 case UdpPacketType.Fec:
@@ -172,11 +172,11 @@ namespace Core.Networking
                     break;
 
                 case UdpPacketType.Disconnect:
-                    Console.WriteLine($"[UdpPeer] Nhan duoc DISCONNECT packet - chuyen cho subscribers");
+                    //Console.WriteLine($"[UdpPeer] Nhan duoc DISCONNECT packet - chuyen cho subscribers");
                     OnPacketReceived?.Invoke(packet);
                     break;
                 case UdpPacketType.Kick:
-                    Console.WriteLine($"[UdpPeer] Nhan duoc KICK packet - chuyen cho subscribers");
+                    //Console.WriteLine($"[UdpPeer] Nhan duoc KICK packet - chuyen cho subscribers");
                     OnPacketReceived?.Invoke(packet);
                     break;
                 case UdpPacketType.Ping:
