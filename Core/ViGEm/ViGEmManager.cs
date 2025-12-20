@@ -184,50 +184,46 @@ namespace RealTimeUdpStream.Core.ViGEm
         {
             if (!_isCapturing || _disposed || _targetEndPoint == null) return;
 
-            // Chỉ xử lý phím IJKLO
-            if (keyEvent.Key != VirtualKey.I && 
-                keyEvent.Key != VirtualKey.J && 
-                keyEvent.Key != VirtualKey.K && 
-                keyEvent.Key != VirtualKey.L &&
-                keyEvent.Key != VirtualKey.O)
-            {
-                return;
-            }
-
             try
             {
-                Console.WriteLine($"[ViGEmManager] Sending key {keyEvent.Key} {keyEvent.Action} to {_targetEndPoint}");
-
-                // Serialize KeyEvent
-                byte[] data = SerializeKeyEvent(keyEvent);
-
-                // Tạo UDP packet
-                var header = new UdpPacketHeader
+                // Load config để kiểm tra xem phím này có controller mapping không
+                var config = ConfigHelper.LoadConfig();
+                if (config?.ControllerMapping != null && 
+                    config.ControllerMapping.ContainsKey(keyEvent.Key.ToString()))
                 {
-                    Version = 1,
-                    PacketType = VIGEM_PACKET_TYPE,
-                    SequenceNumber = (uint)keyEvent.Timestamp,
-                    TimestampMs = (ulong)keyEvent.Timestamp,
-                    TotalChunks = 1,
-                    ChunkId = 0
-                };
+                    Console.WriteLine($"[ViGEmManager] Sending key {keyEvent.Key} {keyEvent.Action} to {_targetEndPoint}");
 
-                var udpPacket = new UdpPacket(header, new ArraySegment<byte>(data));
+                    // Serialize KeyEvent
+                    byte[] data = SerializeKeyEvent(keyEvent);
 
-                // Gửi async
-                _ = System.Threading.Tasks.Task.Run(async () =>
-                {
-                    try
+                    // Tạo UDP packet
+                    var header = new UdpPacketHeader
                     {
-                        await _udpPeer.SendToAsync(udpPacket, _targetEndPoint);
-                        Console.WriteLine($"[ViGEmManager] Successfully sent key {keyEvent.Key} {keyEvent.Action}");
-                    }
-                    catch (Exception ex)
+                        Version = 1,
+                        PacketType = VIGEM_PACKET_TYPE,
+                        SequenceNumber = (uint)keyEvent.Timestamp,
+                        TimestampMs = (ulong)keyEvent.Timestamp,
+                        TotalChunks = 1,
+                        ChunkId = 0
+                    };
+
+                    var udpPacket = new UdpPacket(header, new ArraySegment<byte>(data));
+
+                    // Gửi async
+                    _ = System.Threading.Tasks.Task.Run(async () =>
                     {
-                        Console.WriteLine($"[ViGEmManager] Error sending: {ex.Message}");
-                        OnError?.Invoke(ex);
-                    }
-                });
+                        try
+                        {
+                            await _udpPeer.SendToAsync(udpPacket, _targetEndPoint);
+                            Console.WriteLine($"[ViGEmManager] Successfully sent key {keyEvent.Key} {keyEvent.Action}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[ViGEmManager] Error sending: {ex.Message}");
+                            OnError?.Invoke(ex);
+                        }
+                    });
+                }
             }
             catch (Exception ex)
             {
@@ -293,28 +289,16 @@ namespace RealTimeUdpStream.Core.ViGEm
             bool isPressed = (keyEvent.Action == KeyAction.Down);
             Console.WriteLine($"[ViGEmManager] isPressed: {isPressed}");
 
-            switch (keyEvent.Key)
+            // Load config và xử lý dynamic
+            try
             {
-                case VirtualKey.I:
-                    _vigemController.SetIPressedState(isPressed);
-                    Console.WriteLine($"[ViGEmManager] I key {(isPressed ? "PRESSED" : "RELEASED")} - Joystick UP");
-                    break;
-                case VirtualKey.K:
-                    _vigemController.SetKPressedState(isPressed);
-                    Console.WriteLine($"[ViGEmManager] K key {(isPressed ? "PRESSED" : "RELEASED")} - Joystick DOWN");
-                    break;
-                case VirtualKey.J:
-                    _vigemController.SetJPressedState(isPressed);
-                    Console.WriteLine($"[ViGEmManager] J key {(isPressed ? "PRESSED" : "RELEASED")} - Joystick LEFT");
-                    break;
-                case VirtualKey.L:
-                    _vigemController.SetLPressedState(isPressed);
-                    Console.WriteLine($"[ViGEmManager] L key {(isPressed ? "PRESSED" : "RELEASED")} - Joystick RIGHT");
-                    break;
-                case VirtualKey.O:
-                    _vigemController.SetOPressedState(isPressed);
-                    Console.WriteLine($"[ViGEmManager] O key {(isPressed ? "PRESSED" : "RELEASED")} - Button A");
-                    break;
+                var config = ConfigHelper.LoadConfig();
+                _vigemController.ProcessKeyEvent(keyEvent.Key, isPressed, config);
+                Console.WriteLine($"[ViGEmManager] Processed {keyEvent.Key} {(isPressed ? "PRESSED" : "RELEASED")}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ViGEmManager] Error processing key event: {ex.Message}");
             }
         }
 

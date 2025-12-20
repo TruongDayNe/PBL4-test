@@ -50,10 +50,10 @@
     "F10": "",
     "F11": "",
     "F12": "",
-    "Up": "",
-    "Down": "",
-    "Left": "",
-    "Right": "",
+    "Up": "Up",
+    "Down": "Down",
+    "Left": "Left",
+    "Right": "Right",
     "PageUp": "",
     "PageDown": "",
     "Home": "",
@@ -66,16 +66,16 @@
     "RCtrl": "RControlKey",
     "LAlt": "LMenu",
     "RAlt": "RMenu",
-    "NumPad0": "",
-    "NumPad1": "",
-    "NumPad2": "",
-    "NumPad3": "",
-    "NumPad4": "",
-    "NumPad5": "",
-    "NumPad6": "",
-    "NumPad7": "",
-    "NumPad8": "",
-    "NumPad9": "",
+    "NumPad0": "NumPad0",
+    "NumPad1": "NumPad1",
+    "NumPad2": "NumPad2",
+    "NumPad3": "NumPad3",
+    "NumPad4": "NumPad4",
+    "NumPad5": "NumPad5",
+    "NumPad6": "NumPad6",
+    "NumPad7": "NumPad7",
+    "NumPad8": "NumPad8",
+    "NumPad9": "NumPad9",
     "Multiply": "",
     "Add": "",
     "Subtract": "",
@@ -85,17 +85,19 @@
     "ScrollLock": "",
     "Pause": "",
     "PrintScreen": "",
-    "OemSemicolon": "",
-    "OemPlus": "",
-    "OemComma": "",
-    "OemMinus": "",
-    "OemPeriod": "",
-    "OemQuestion": "",
+    "OemSemicolon": "OemSemicolon",
+    "OemPlus": "OemPlus",
+    "OemComma": "OemComma",
+    "OemMinus": "OemMinus",
+    "OemPeriod": "OemPeriod",
+    "OemQuestion": "OemQuestion",
     "OemTilde": "",
-    "OemOpenBrackets": "",
-    "OemPipe": "",
-    "OemCloseBrackets": "",
-    "OemQuotes": ""
+    "OemOpenBrackets": "OemOpenBrackets",
+    "OemPipe": "OemPipe",
+    "OemCloseBrackets": "OemCloseBrackets",
+    "OemQuotes": "OemQuotes",
+    "J": "",
+    "L": ""
   },
   "ControllerMapping": {
     "D1": {
@@ -175,6 +177,26 @@
       "Value": 1
     },
     "Right": {
+      "Type": "DPadRight",
+      "Value": 1
+    },
+    "NumPad7": {
+      "Type": "LeftStickButton",
+      "Value": 1
+    },
+    "NumPad9": {
+      "Type": "RightStickButton",
+      "Value": 1
+    },
+    "NumPad2": {
+      "Type": "DPadDown",
+      "Value": 1
+    },
+    "NumPad1": {
+      "Type": "DPadLeft",
+      "Value": 1
+    },
+    "NumPad3": {
       "Type": "DPadRight",
       "Value": 1
     },

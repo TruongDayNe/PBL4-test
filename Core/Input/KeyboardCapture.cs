@@ -100,7 +100,52 @@ namespace RealTimeUdpStream.Core.Input
                 { VirtualKey.NumPad6, false },
                 { VirtualKey.NumPad7, false },
                 { VirtualKey.NumPad8, false },
-                { VirtualKey.NumPad9, false }
+                { VirtualKey.NumPad9, false },
+                { VirtualKey.Multiply, false },
+                { VirtualKey.Add, false },
+                { VirtualKey.Subtract, false },
+                { VirtualKey.Decimal, false },
+                { VirtualKey.Divide, false },
+                
+                // Function keys (F1-F12)
+                { VirtualKey.F1, false },
+                { VirtualKey.F2, false },
+                { VirtualKey.F3, false },
+                { VirtualKey.F4, false },
+                { VirtualKey.F5, false },
+                { VirtualKey.F6, false },
+                { VirtualKey.F7, false },
+                { VirtualKey.F8, false },
+                { VirtualKey.F9, false },
+                { VirtualKey.F10, false },
+                { VirtualKey.F11, false },
+                { VirtualKey.F12, false },
+                
+                // Special keys
+                { VirtualKey.PageUp, false },
+                { VirtualKey.PageDown, false },
+                { VirtualKey.Home, false },
+                { VirtualKey.End, false },
+                { VirtualKey.Insert, false },
+                { VirtualKey.Delete, false },
+                { VirtualKey.Back, false },
+                { VirtualKey.NumLock, false },
+                { VirtualKey.ScrollLock, false },
+                { VirtualKey.Pause, false },
+                { VirtualKey.PrintScreen, false },
+                
+                // OEM keys (symbols)
+                { VirtualKey.OemSemicolon, false },
+                { VirtualKey.OemPlus, false },
+                { VirtualKey.OemComma, false },
+                { VirtualKey.OemMinus, false },
+                { VirtualKey.OemPeriod, false },
+                { VirtualKey.OemQuestion, false },
+                { VirtualKey.OemTilde, false },
+                { VirtualKey.OemOpenBrackets, false },
+                { VirtualKey.OemPipe, false },
+                { VirtualKey.OemCloseBrackets, false },
+                { VirtualKey.OemQuotes, false }
             };
         }
 

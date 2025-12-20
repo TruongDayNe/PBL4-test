@@ -284,7 +284,11 @@ namespace RealTimeUdpStream.Core.Models
         // Special
         Start,
         Back,
-        Guide
+        Guide,
+        
+        // Stick Buttons (L3/R3)
+        LeftStickButton,
+        RightStickButton
     }
 
     /// <summary>

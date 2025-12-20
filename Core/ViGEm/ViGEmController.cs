@@ -1,13 +1,16 @@
 using System;
+using System.Collections.Generic;
 using Nefarius.ViGEm.Client;
 using Nefarius.ViGEm.Client.Targets;
 using Nefarius.ViGEm.Client.Targets.Xbox360;
+using RealTimeUdpStream.Core.Input;
+using RealTimeUdpStream.Core.Models;
 
 namespace RealTimeUdpStream.Core.ViGEm
 {
     /// <summary>
     /// Wrapper cho ViGEm Xbox 360 Controller - Giả lập controller ảo
-    /// Ánh xạ phím IJKL thành joystick trái
+    /// Dynamic mapping từ config file
     /// </summary>
     public class ViGEmController : IDisposable
     {
@@ -15,12 +18,14 @@ namespace RealTimeUdpStream.Core.ViGEm
         private IXbox360Controller _controller;
         private bool _disposed = false;
 
-        // Trạng thái các phím đang nhấn
-        private bool _isIPressed = false; // Lên
-        private bool _isKPressed = false; // Xuống
-        private bool _isJPressed = false; // Trái
-        private bool _isLPressed = false; // Phải
-        private bool _isOPressed = false; // Nút A
+        // Trạng thái các trục analog
+        private Dictionary<string, bool> _pressedKeys = new Dictionary<string, bool>();
+        private short _leftStickX = 0;
+        private short _leftStickY = 0;
+        private short _rightStickX = 0;
+        private short _rightStickY = 0;
+        private byte _leftTrigger = 0;
+        private byte _rightTrigger = 0;
 
         public ViGEmController()
         {
@@ -38,112 +43,246 @@ namespace RealTimeUdpStream.Core.ViGEm
         }
 
         /// <summary>
-        /// Xử lý phím I - Joystick lên
+        /// Xử lý sự kiện phím dựa vào controller mapping từ config
         /// </summary>
-        public void SetIPressedState(bool pressed)
+        public void ProcessKeyEvent(VirtualKey key, bool pressed, KeyMappingConfig config)
         {
-            _isIPressed = pressed;
-            UpdateJoystick();
-        }
+            if (_disposed || config?.ControllerMapping == null) return;
 
-        /// <summary>
-        /// Xử lý phím K - Joystick xuống
-        /// </summary>
-        public void SetKPressedState(bool pressed)
-        {
-            _isKPressed = pressed;
-            UpdateJoystick();
-        }
-
-        /// <summary>
-        /// Xử lý phím J - Joystick trái
-        /// </summary>
-        public void SetJPressedState(bool pressed)
-        {
-            _isJPressed = pressed;
-            UpdateJoystick();
-        }
-
-        /// <summary>
-        /// Xử lý phím L - Joystick phải
-        /// </summary>
-        public void SetLPressedState(bool pressed)
-        {
-            _isLPressed = pressed;
-            UpdateJoystick();
-        }
-
-        /// <summary>
-        /// Xử lý phím O - Nút A trên Xbox controller
-        /// </summary>
-        public void SetOPressedState(bool pressed)
-        {
-            _isOPressed = pressed;
-            UpdateButtons();
-        }
-
-        /// <summary>
-        /// Cập nhật trạng thái joystick dựa trên các phím đang nhấn
-        /// </summary>
-        private void UpdateJoystick()
-        {
-            if (_disposed) return;
-
-            // Tính toán giá trị trục X (trái/phải)
-            short thumbX = 0;
-            if (_isJPressed) thumbX = -32767; // Trái
-            if (_isLPressed) thumbX = 32767;  // Phải
-
-            // Tính toán giá trị trục Y (lên/xuống)
-            short thumbY = 0;
-            if (_isIPressed) thumbY = 32767;  // Lên
-            if (_isKPressed) thumbY = -32767; // Xuống
-
-            // Cập nhật joystick trái
-            _controller.SetAxisValue(Xbox360Axis.LeftThumbX, thumbX);
-            _controller.SetAxisValue(Xbox360Axis.LeftThumbY, thumbY);
+            string keyName = key.ToString();
             
-            // Submit report để áp dụng thay đổi
-            _controller.SubmitReport();
+            // Tìm mapping cho phím này
+            if (!config.ControllerMapping.TryGetValue(keyName, out var mapping))
+            {
+                return; // Phím không có mapping
+            }
 
-            Console.WriteLine($"[ViGEmController] Joystick cap nhat: X={thumbX}, Y={thumbY} - Report submitted!");
+            // Cập nhật state
+            _pressedKeys[keyName] = pressed;
+
+            // Xử lý theo loại mapping
+            switch (mapping.Type)
+            {
+                // Left Stick
+                case ControllerActionType.LeftStickUp:
+                case ControllerActionType.LeftStickDown:
+                case ControllerActionType.LeftStickLeft:
+                case ControllerActionType.LeftStickRight:
+                    UpdateLeftStick(config);
+                    break;
+
+                // Right Stick
+                case ControllerActionType.RightStickUp:
+                case ControllerActionType.RightStickDown:
+                case ControllerActionType.RightStickLeft:
+                case ControllerActionType.RightStickRight:
+                    UpdateRightStick(config);
+                    break;
+
+                // Triggers
+                case ControllerActionType.LeftTrigger:
+                    _leftTrigger = pressed ? (byte)255 : (byte)0;
+                    _controller.SetSliderValue(Xbox360Slider.LeftTrigger, _leftTrigger);
+                    _controller.SubmitReport();
+                    break;
+
+                case ControllerActionType.RightTrigger:
+                    _rightTrigger = pressed ? (byte)255 : (byte)0;
+                    _controller.SetSliderValue(Xbox360Slider.RightTrigger, _rightTrigger);
+                    _controller.SubmitReport();
+                    break;
+
+                // Shoulders
+                case ControllerActionType.LeftShoulder:
+                    _controller.SetButtonState(Xbox360Button.LeftShoulder, pressed);
+                    _controller.SubmitReport();
+                    break;
+
+                case ControllerActionType.RightShoulder:
+                    _controller.SetButtonState(Xbox360Button.RightShoulder, pressed);
+                    _controller.SubmitReport();
+                    break;
+
+                // Face Buttons
+                case ControllerActionType.ButtonA:
+                    _controller.SetButtonState(Xbox360Button.A, pressed);
+                    _controller.SubmitReport();
+                    Console.WriteLine($"[ViGEmController] Button A {(pressed ? "PRESSED" : "RELEASED")}");
+                    break;
+
+                case ControllerActionType.ButtonB:
+                    _controller.SetButtonState(Xbox360Button.B, pressed);
+                    _controller.SubmitReport();
+                    Console.WriteLine($"[ViGEmController] Button B {(pressed ? "PRESSED" : "RELEASED")}");
+                    break;
+
+                case ControllerActionType.ButtonX:
+                    _controller.SetButtonState(Xbox360Button.X, pressed);
+                    _controller.SubmitReport();
+                    Console.WriteLine($"[ViGEmController] Button X {(pressed ? "PRESSED" : "RELEASED")}");
+                    break;
+
+                case ControllerActionType.ButtonY:
+                    _controller.SetButtonState(Xbox360Button.Y, pressed);
+                    _controller.SubmitReport();
+                    Console.WriteLine($"[ViGEmController] Button Y {(pressed ? "PRESSED" : "RELEASED")}");
+                    break;
+
+                // D-Pad
+                case ControllerActionType.DPadUp:
+                    _controller.SetButtonState(Xbox360Button.Up, pressed);
+                    _controller.SubmitReport();
+                    break;
+
+                case ControllerActionType.DPadDown:
+                    _controller.SetButtonState(Xbox360Button.Down, pressed);
+                    _controller.SubmitReport();
+                    break;
+
+                case ControllerActionType.DPadLeft:
+                    _controller.SetButtonState(Xbox360Button.Left, pressed);
+                    _controller.SubmitReport();
+                    break;
+
+                case ControllerActionType.DPadRight:
+                    _controller.SetButtonState(Xbox360Button.Right, pressed);
+                    _controller.SubmitReport();
+                    break;
+
+                // System Buttons
+                case ControllerActionType.Start:
+                    _controller.SetButtonState(Xbox360Button.Start, pressed);
+                    _controller.SubmitReport();
+                    break;
+
+                case ControllerActionType.Back:
+                    _controller.SetButtonState(Xbox360Button.Back, pressed);
+                    _controller.SubmitReport();
+                    break;
+
+                case ControllerActionType.Guide:
+                    _controller.SetButtonState(Xbox360Button.Guide, pressed);
+                    _controller.SubmitReport();
+                    break;
+
+                // Stick Buttons
+                case ControllerActionType.LeftStickButton:
+                    _controller.SetButtonState(Xbox360Button.LeftThumb, pressed);
+                    _controller.SubmitReport();
+                    break;
+
+                case ControllerActionType.RightStickButton:
+                    _controller.SetButtonState(Xbox360Button.RightThumb, pressed);
+                    _controller.SubmitReport();
+                    break;
+            }
         }
 
         /// <summary>
-        /// Cập nhật trạng thái các nút bấm trên controller
+        /// Cập nhật Left Stick dựa trên tất cả phím đang nhấn
         /// </summary>
-        private void UpdateButtons()
+        private void UpdateLeftStick(KeyMappingConfig config)
         {
-            if (_disposed) return;
+            short x = 0, y = 0;
 
-            // Set nút A (O key)
-            if (_isOPressed)
+            foreach (var kvp in config.ControllerMapping)
             {
-                _controller.SetButtonState(Xbox360Button.A, true);
-                Console.WriteLine("[ViGEmController] Nut A PRESSED");
-            }
-            else
-            {
-                _controller.SetButtonState(Xbox360Button.A, false);
-                Console.WriteLine("[ViGEmController] Nut A RELEASED");
+                if (!_pressedKeys.ContainsKey(kvp.Key) || !_pressedKeys[kvp.Key])
+                    continue;
+
+                switch (kvp.Value.Type)
+                {
+                    case ControllerActionType.LeftStickUp:
+                        y = 32767;
+                        break;
+                    case ControllerActionType.LeftStickDown:
+                        y = -32767;
+                        break;
+                    case ControllerActionType.LeftStickLeft:
+                        x = -32767;
+                        break;
+                    case ControllerActionType.LeftStickRight:
+                        x = 32767;
+                        break;
+                }
             }
 
-            // Submit report để áp dụng thay đổi
+            _leftStickX = x;
+            _leftStickY = y;
+            _controller.SetAxisValue(Xbox360Axis.LeftThumbX, x);
+            _controller.SetAxisValue(Xbox360Axis.LeftThumbY, y);
             _controller.SubmitReport();
+            
+            Console.WriteLine($"[ViGEmController] Left Stick: X={x}, Y={y}");
         }
 
         /// <summary>
-        /// Reset tất cả phím về trạng thái không nhấn
+        /// Cập nhật Right Stick dựa trên tất cả phím đang nhấn
+        /// </summary>
+        private void UpdateRightStick(KeyMappingConfig config)
+        {
+            short x = 0, y = 0;
+
+            foreach (var kvp in config.ControllerMapping)
+            {
+                if (!_pressedKeys.ContainsKey(kvp.Key) || !_pressedKeys[kvp.Key])
+                    continue;
+
+                switch (kvp.Value.Type)
+                {
+                    case ControllerActionType.RightStickUp:
+                        y = 32767;
+                        break;
+                    case ControllerActionType.RightStickDown:
+                        y = -32767;
+                        break;
+                    case ControllerActionType.RightStickLeft:
+                        x = -32767;
+                        break;
+                    case ControllerActionType.RightStickRight:
+                        x = 32767;
+                        break;
+                }
+            }
+
+            _rightStickX = x;
+            _rightStickY = y;
+            _controller.SetAxisValue(Xbox360Axis.RightThumbX, x);
+            _controller.SetAxisValue(Xbox360Axis.RightThumbY, y);
+            _controller.SubmitReport();
+            
+            Console.WriteLine($"[ViGEmController] Right Stick: X={x}, Y={y}");
+        }
+
+        /// <summary>
+        /// Reset tất cả về trạng thái ban đầu
         /// </summary>
         public void ResetAll()
         {
-            _isIPressed = false;
-            _isKPressed = false;
-            _isJPressed = false;
-            _isLPressed = false;
-            _isOPressed = false;
-            UpdateJoystick();
-            UpdateButtons();
+            if (_disposed) return;
+
+            _pressedKeys.Clear();
+            _leftStickX = _leftStickY = 0;
+            _rightStickX = _rightStickY = 0;
+            _leftTrigger = _rightTrigger = 0;
+
+            // Reset all buttons
+            foreach (Xbox360Button button in Enum.GetValues(typeof(Xbox360Button)))
+            {
+                _controller.SetButtonState(button, false);
+            }
+
+            // Reset sticks
+            _controller.SetAxisValue(Xbox360Axis.LeftThumbX, 0);
+            _controller.SetAxisValue(Xbox360Axis.LeftThumbY, 0);
+            _controller.SetAxisValue(Xbox360Axis.RightThumbX, 0);
+            _controller.SetAxisValue(Xbox360Axis.RightThumbY, 0);
+
+            // Reset triggers
+            _controller.SetSliderValue(Xbox360Slider.LeftTrigger, 0);
+            _controller.SetSliderValue(Xbox360Slider.RightTrigger, 0);
+
+            _controller.SubmitReport();
         }
 
         public void Dispose()
