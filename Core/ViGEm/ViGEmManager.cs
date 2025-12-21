@@ -186,18 +186,9 @@ namespace RealTimeUdpStream.Core.ViGEm
 
             try
             {
-                // Load config để kiểm tra xem phím này có controller mapping không
-                var config = ConfigHelper.LoadConfig();
+                // HOST gửi TẤT CẢ phím cho CLIENT, không filter
+                // CLIENT sẽ quyết định phím nào map vào controller dựa trên config của CLIENT
                 string keyName = keyEvent.Key.ToString();
-                
-                // FILTER: Chỉ gửi key có trong ControllerMapping
-                if (config?.ControllerMapping == null || 
-                    !config.ControllerMapping.ContainsKey(keyName))
-                {
-                    // Key không có mapping trong ControllerMapping → bỏ qua
-                    Console.WriteLine($"[ViGEmManager] ✓ Skipping {keyName} - not in ControllerMapping");
-                    return;
-                }
                 
                 Console.WriteLine($"[ViGEmManager] Sending key {keyEvent.Key} {keyEvent.Action} to {_targetEndPoint}");
 
