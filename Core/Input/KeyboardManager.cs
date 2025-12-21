@@ -159,7 +159,7 @@ namespace RealTimeUdpStream.Core.Input
             }
             Console.WriteLine("========================================");
             
-            // Nếu không có mapping nào hợp lệ, truyền null để sử dụng default mapping
+            // Truyền mapping cho simulator (có thể là rỗng = identity mapping)
             _keyboardSimulator = new KeyboardSimulator(keyMapping.Count > 0 ? keyMapping : null);
 
             // Subscribe to network events

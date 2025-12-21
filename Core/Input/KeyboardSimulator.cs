@@ -28,10 +28,10 @@ namespace RealTimeUdpStream.Core.Input
         {
             if (keyMapping == null || keyMapping.Count == 0)
             {
-                // Không có mapping nào → Không map phím nào cả
-                _keyMapping = new Dictionary<VirtualKey, VirtualKey>();
-                Console.WriteLine("[KeyboardSimulator] No key mapping configured - NO KEYS WILL BE TRANSMITTED");
-                Debug.WriteLine("[KeyboardSimulator] No key mapping configured - NO KEYS WILL BE TRANSMITTED");
+                // Không có mapping → Dùng identity mapping (phím gì nhận được thì simulate phím đó)
+                _keyMapping = null; // null = identity mapping
+                Console.WriteLine("[KeyboardSimulator] No key mapping configured - using IDENTITY mapping (key → same key)");
+                Debug.WriteLine("[KeyboardSimulator] No key mapping configured - using IDENTITY mapping");
             }
             else
             {
@@ -51,14 +51,23 @@ namespace RealTimeUdpStream.Core.Input
         /// </summary>
         public void UpdateKeyMapping(Dictionary<VirtualKey, VirtualKey> newMapping)
         {
-            _keyMapping = newMapping;
-            Console.WriteLine($"🔄 [KeyboardSimulator] Key mapping updated ({newMapping.Count} mappings)");
-            Debug.WriteLine($"🔄 [KeyboardSimulator] Key mapping updated ({newMapping.Count} mappings)");
-            
-            foreach (var kvp in _keyMapping)
+            if (newMapping == null || newMapping.Count == 0)
             {
-                Console.WriteLine($"  {kvp.Key} → {kvp.Value}");
-                Debug.WriteLine($"  {kvp.Key} → {kvp.Value}");
+                _keyMapping = null; // Identity mapping
+                Console.WriteLine($"🔄 [KeyboardSimulator] Key mapping cleared - using IDENTITY mapping");
+                Debug.WriteLine($"🔄 [KeyboardSimulator] Key mapping cleared - using IDENTITY mapping");
+            }
+            else
+            {
+                _keyMapping = newMapping;
+                Console.WriteLine($"🔄 [KeyboardSimulator] Key mapping updated ({newMapping.Count} mappings)");
+                Debug.WriteLine($"🔄 [KeyboardSimulator] Key mapping updated ({newMapping.Count} mappings)");
+                
+                foreach (var kvp in _keyMapping)
+                {
+                    Console.WriteLine($"  {kvp.Key} → {kvp.Value}");
+                    Debug.WriteLine($"  {kvp.Key} → {kvp.Value}");
+                }
             }
         }
 
@@ -69,9 +78,24 @@ namespace RealTimeUdpStream.Core.Input
             try
             {
                 // Ánh xạ phím
-                VirtualKey targetKey = _keyMapping.ContainsKey(keyEvent.Key)
-                    ? _keyMapping[keyEvent.Key]
-                    : keyEvent.Key;
+                VirtualKey targetKey;
+                
+                if (_keyMapping == null)
+                {
+                    // Identity mapping: phím nào nhận được thì simulate phím đó
+                    targetKey = keyEvent.Key;
+                }
+                else if (_keyMapping.ContainsKey(keyEvent.Key))
+                {
+                    // Có mapping cho phím này
+                    targetKey = _keyMapping[keyEvent.Key];
+                }
+                else
+                {
+                    // Không có mapping cho phím này → bỏ qua (không simulate)
+                    Console.WriteLine($"[KeyboardSimulator] Skipping {keyEvent.Key} - no mapping defined");
+                    return;
+                }
 
                 Console.WriteLine($"[KeyboardSimulator] Mapping: {keyEvent.Key} -> {targetKey} (Action: {keyEvent.Action})");
                 
