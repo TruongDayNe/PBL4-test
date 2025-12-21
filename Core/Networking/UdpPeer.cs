@@ -282,6 +282,23 @@ namespace Core.Networking
             var persistentPacket = new UdpPacket(packet.Header, new ArraySegment<byte>(payloadCopy));
 
             fecGroup.AddPacket(persistentPacket);
+            // Kiểm tra xem việc thêm gói dữ liệu này có giúp đủ điều kiện phục hồi gói thiếu không
+            if (fecGroup.CanRecover())
+            {
+                using (var recoveredPacket = fecGroup.Recover())
+                {
+                    if (recoveredPacket != null)
+                    {
+                        // Ghi nhận số liệu phục hồi
+                        _networkStats.LogFecPacketRecovered();
+
+                        // Đưa gói tin đã phục hồi vào lại luồng xử lý (để ghép frame)
+                        // Lưu ý: HandleDataPacket sẽ lại gọi AddToFecGroup, nhưng vì nhóm đã đủ (Count == Expected)
+                        // nên CanRecover sẽ trả về false, tránh được vòng lặp vô tận.
+                        HandleDataPacket(recoveredPacket);
+                    }
+                }
+            }
         }
 
         /// <summary>
