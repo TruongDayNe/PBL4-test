@@ -117,9 +117,8 @@ namespace RealTimeUdpStream.Core.Util
                 // Dispose watcher cũ nếu có
                 _configWatcher?.Dispose();
 
-                // Tìm file gốc trong project root (không phải file copy trong bin)
-                var projectRootFile = FindProjectRootConfigFile(configPath);
-                var watchPath = projectRootFile ?? configPath;
+                // LUÔN DÙNG FILE TRONG BIN FOLDER (không tìm project root nữa)
+                var watchPath = configPath;
 
                 var directory = Path.GetDirectoryName(watchPath);
                 var fileName = Path.GetFileName(watchPath);
@@ -134,10 +133,6 @@ namespace RealTimeUdpStream.Core.Util
                 _watchedConfigPath = watchPath;
 
                 Console.WriteLine($"🔍 Watching config file: {watchPath}");
-                if (projectRootFile != null && projectRootFile != configPath)
-                {
-                    Console.WriteLine($"   (Project root file, will copy to: {configPath})");
-                }
                 Debug.WriteLine($"🔍 File watcher setup for: {watchPath}");
             }
             catch (Exception ex)
