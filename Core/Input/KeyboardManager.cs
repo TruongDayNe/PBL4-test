@@ -244,19 +244,8 @@ namespace RealTimeUdpStream.Core.Input
 
             try
             {
-                // Kiểm tra xem phím này có trong mapping không (và không trống)
-                var config = ConfigHelper.GetConfig();
-                string keyName = keyEvent.Key.ToString();
-                
-                if (!config.KeyboardMapping.ContainsKey(keyName) || 
-                    string.IsNullOrWhiteSpace(config.KeyboardMapping[keyName]))
-                {
-                    // Phím không có mapping hoặc mapping trống → không gửi
-                    Console.WriteLine($"[KeyboardManager] ✓ Skipping {keyName} - no mapping or empty");
-                    Debug.WriteLine($"[KeyboardManager] Skipping {keyName} - no mapping or empty");
-                    return;
-                }
-                
+                // CLIENT gửi TẤT CẢ phím RAW cho HOST, không filter theo mapping
+                // HOST sẽ quyết định map hay không dựa trên config của HOST
                 Console.WriteLine($"[KeyboardManager] Dang gui phim {keyEvent.Key} {keyEvent.Action} toi {_targetEndPoint}");
                 
                 // Serialize KeyEvent
