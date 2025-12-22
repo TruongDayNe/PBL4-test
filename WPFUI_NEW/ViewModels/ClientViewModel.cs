@@ -212,11 +212,10 @@ namespace WPFUI_NEW.ViewModels
                     Console.WriteLine("[CLIENT] Subscribing to OnPacketReceived");
                     _sharedUdpPeer.OnPacketReceived += HandleControlPacket;
 
-                    Console.WriteLine("[CLIENT] Creating ScreenReceiver");
                     _screenReceiver = new ScreenReceiver(_sharedUdpPeer);
                     _screenReceiver.OnFrameReady += HandleFrameReady;
+                    _screenReceiver.Start(); // BẮT ĐẦU NHẬN VIDEO
 
-                    Console.WriteLine("[CLIENT] Creating AudioManager");
                     // AUDIO DISABLED
                     //_audioManager = new AudioManager(_sharedUdpPeer, AudioConfig.CreateDefault(), isClientMode: false);
                     //_audioManager.StartAudioReceiving();
