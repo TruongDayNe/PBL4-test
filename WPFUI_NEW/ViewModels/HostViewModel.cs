@@ -454,6 +454,7 @@ namespace WPFUI_NEW.ViewModels
                     }
                     if (_screenProcessor == null) _screenProcessor = ScreenProcessor.Instance;
 
+                    // AUDIO DISABLED
                     _audioManager = new AudioManager(_sharedUdpPeer, AudioConfig.CreateDefault(), false);
                     _audioManager.StartAudioStreaming(AudioInputType.SystemAudio);
 

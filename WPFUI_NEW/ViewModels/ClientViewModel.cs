@@ -217,8 +217,9 @@ namespace WPFUI_NEW.ViewModels
                     _screenReceiver.OnFrameReady += HandleFrameReady;
 
                     Console.WriteLine("[CLIENT] Creating AudioManager");
-                    _audioManager = new AudioManager(_sharedUdpPeer, AudioConfig.CreateDefault(), isClientMode: false);
-                    _audioManager.StartAudioReceiving();
+                    // AUDIO DISABLED
+                    //_audioManager = new AudioManager(_sharedUdpPeer, AudioConfig.CreateDefault(), isClientMode: false);
+                    //_audioManager.StartAudioReceiving();
 
                     // Lấy HOST endpoint để gửi phím
                     var hostEndPoint = new System.Net.IPEndPoint(System.Net.IPAddress.Parse(HostIpAddress), 12000);
