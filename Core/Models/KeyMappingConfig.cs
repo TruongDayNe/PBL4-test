@@ -56,11 +56,11 @@ namespace RealTimeUdpStream.Core.Models
 
                 string json = JsonSerializer.Serialize(this, options);
                 File.WriteAllText(filePath, json);
-                Console.WriteLine($"✓ Config saved to: {filePath}");
+                Console.WriteLine($"Config saved to: {filePath}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Failed to save config: {ex.Message}");
+                Console.WriteLine($"Failed to save config: {ex.Message}");
                 throw;
             }
         }
@@ -74,7 +74,7 @@ namespace RealTimeUdpStream.Core.Models
             {
                 if (!File.Exists(filePath))
                 {
-                    Console.WriteLine($"❌ CRITICAL: Config file not found: {filePath}");
+                    Console.WriteLine($"CRITICAL: Config file not found: {filePath}");
                     throw new FileNotFoundException(
                         $"Config file not found at: {filePath}. " +
                         "Please ensure keymapping.json exists in the same folder as the .exe file.",
@@ -97,7 +97,7 @@ namespace RealTimeUdpStream.Core.Models
                 
                 if (config == null)
                 {
-                    Console.WriteLine("❌ CRITICAL: Failed to parse config - result is null");
+                    Console.WriteLine("CRITICAL: Failed to parse config - result is null");
                     throw new InvalidDataException(
                         $"Failed to deserialize config from {filePath}. " +
                         "JSON file may be corrupted or invalid.");
@@ -113,7 +113,7 @@ namespace RealTimeUdpStream.Core.Models
                 }
                 else
                 {
-                    Console.WriteLine("  ❌ W mapping NOT FOUND in config!");
+                    Console.WriteLine(" W mapping NOT FOUND in config!");
                 }
                 
                 // Debug: print first few keyboard mappings
@@ -131,7 +131,7 @@ namespace RealTimeUdpStream.Core.Models
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ CRITICAL: Failed to load config: {ex.GetType().Name}");
+                Console.WriteLine($"CRITICAL: Failed to load config: {ex.GetType().Name}");
                 Console.WriteLine($"   Message: {ex.Message}");
                 
                 if (ex.InnerException != null)
@@ -165,25 +165,25 @@ namespace RealTimeUdpStream.Core.Models
             // Check keyboard mapping
             if (KeyboardMapping == null || KeyboardMapping.Count == 0)
             {
-                Console.WriteLine("⚠️ Warning: No keyboard mappings defined");
+                Console.WriteLine(" Warning: No keyboard mappings defined");
             }
 
             // Check controller mapping
             if (ControllerMapping == null || ControllerMapping.Count == 0)
             {
-                Console.WriteLine("⚠️ Warning: No controller mappings defined");
+                Console.WriteLine(" Warning: No controller mappings defined");
             }
 
             // Check audio settings
             if (AudioSettings == null)
             {
-                Console.WriteLine("❌ Error: AudioSettings is null");
+                Console.WriteLine(" Error: AudioSettings is null");
                 return false;
             }
 
             if (AudioSettings.SampleRate <= 0 || AudioSettings.Channels <= 0)
             {
-                Console.WriteLine("❌ Error: Invalid audio settings");
+                Console.WriteLine(" Error: Invalid audio settings");
                 return false;
             }
 

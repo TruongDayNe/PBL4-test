@@ -54,14 +54,14 @@ namespace RealTimeUdpStream.Core.Input
             if (newMapping == null || newMapping.Count == 0)
             {
                 _keyMapping = null; // Identity mapping
-                Console.WriteLine($"🔄 [KeyboardSimulator] Key mapping cleared - using IDENTITY mapping");
-                Debug.WriteLine($"🔄 [KeyboardSimulator] Key mapping cleared - using IDENTITY mapping");
+                Console.WriteLine($"[KeyboardSimulator] Key mapping cleared - using IDENTITY mapping");
+                Debug.WriteLine($"[KeyboardSimulator] Key mapping cleared - using IDENTITY mapping");
             }
             else
             {
                 _keyMapping = newMapping;
-                Console.WriteLine($"🔄 [KeyboardSimulator] Key mapping updated ({newMapping.Count} mappings)");
-                Debug.WriteLine($"🔄 [KeyboardSimulator] Key mapping updated ({newMapping.Count} mappings)");
+                Console.WriteLine($"[KeyboardSimulator] Key mapping updated ({newMapping.Count} mappings)");
+                Debug.WriteLine($"[KeyboardSimulator] Key mapping updated ({newMapping.Count} mappings)");
                 
                 foreach (var kvp in _keyMapping)
                 {

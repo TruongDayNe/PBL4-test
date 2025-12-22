@@ -129,7 +129,7 @@ namespace RealTimeUdpStream.Core.Audio
 
         public void StopCapture()
         {
-            Debug.WriteLine($"🛑 StopCapture CALLED! _isCapturing={_isCapturing}");
+            Debug.WriteLine($"StopCapture CALLED! _isCapturing={_isCapturing}");
             
             if (!_isCapturing) return;
 
@@ -137,11 +137,11 @@ namespace RealTimeUdpStream.Core.Audio
             {
                 _waveIn.StopRecording();
                 _isCapturing = false;
-                Debug.WriteLine("✓ Recording stopped successfully");
+                Debug.WriteLine("Recording stopped successfully");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"❌ Error stopping: {ex.Message}");
+                Debug.WriteLine($"Error stopping: {ex.Message}");
             }
         }
 
@@ -151,7 +151,7 @@ namespace RealTimeUdpStream.Core.Audio
             
             if (!_isCapturing)
             {
-                Debug.WriteLine($"⚠️ OnDataAvailable SKIPPED: _isCapturing=false!");
+                Debug.WriteLine($"OnDataAvailable SKIPPED: _isCapturing=false!");
                 return;
             }
 
@@ -202,8 +202,8 @@ namespace RealTimeUdpStream.Core.Audio
                 // Check sample rate (System Audio might be 44100Hz, need 48000Hz)
                 if (_inputType == AudioInputType.SystemAudio && _captureFormat.SampleRate != StandardFormat.SampleRate)
                 {
-                    // Console.WriteLine($"⚠️ SAMPLE RATE MISMATCH! Captured: {_captureFormat.SampleRate}Hz, Target: {StandardFormat.SampleRate}Hz"); // TAT LOG
-                    // Console.WriteLine($"⚠️ THIS WILL CAUSE PITCH SHIFT! Need resampling!"); // DISABLED
+                    // Console.WriteLine($"Sample rate mismatch! Captured: {_captureFormat.SampleRate}Hz, Target: {StandardFormat.SampleRate}Hz"); // TAT LOG
+                    // Console.WriteLine($"HIS WILL CAUSE PITCH SHIFT! Need resampling!"); // DISABLED
                     // TODO: Add resampling
                 }
                 
@@ -218,7 +218,7 @@ namespace RealTimeUdpStream.Core.Audio
                     }
                     catch (Exception encEx)
                     {
-                        Debug.WriteLine($"❌ Opus encoding failed: {encEx.Message}");
+                        Debug.WriteLine($"Opus encoding failed: {encEx.Message}");
                         // Fall back to PCM
                         finalAudioData = audioData;
                     }
@@ -240,7 +240,7 @@ namespace RealTimeUdpStream.Core.Audio
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"⚠️ ERROR in OnDataAvailable: {ex.Message}");
+                Debug.WriteLine($"ERROR in OnDataAvailable: {ex.Message}");
             }
         }
 
@@ -254,7 +254,7 @@ namespace RealTimeUdpStream.Core.Audio
 
         private void OnRecordingStopped(object sender, StoppedEventArgs e)
         {
-            Debug.WriteLine($"⛔ OnRecordingStopped FIRED! Exception={e.Exception?.Message ?? "NONE"}");
+            Debug.WriteLine($"OnRecordingStopped FIRED! Exception={e.Exception?.Message ?? "NONE"}");
             _isCapturing = false;
         }
 

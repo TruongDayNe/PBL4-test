@@ -49,8 +49,8 @@ namespace RealTimeUdpStream.Core.Input
         {
             try
             {
-                Debug.WriteLine("🔄 [KeyboardManager] Config changed, reloading key mappings...");
-                Console.WriteLine("🔄 [KeyboardManager] Config changed, reloading key mappings...");
+                Debug.WriteLine("[KeyboardManager] Config changed, reloading key mappings...");
+                Console.WriteLine("[KeyboardManager] Config changed, reloading key mappings...");
                 
                 // Chỉ reload mapping nếu đang simulate (CLIENT mode)
                 if (_isSimulating && _keyboardSimulator != null)
@@ -66,8 +66,8 @@ namespace RealTimeUdpStream.Core.Input
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"❌ [KeyboardManager] Error reloading config: {ex.Message}");
-                Console.WriteLine($"❌ [KeyboardManager] Error reloading config: {ex.Message}");
+                Debug.WriteLine($"[KeyboardManager] Error reloading config: {ex.Message}");
+                Console.WriteLine($"[KeyboardManager] Error reloading config: {ex.Message}");
             }
         }
 
@@ -194,7 +194,7 @@ namespace RealTimeUdpStream.Core.Input
                 }
                 else
                 {
-                    Debug.WriteLine($"⚠️ Invalid key mapping: {kvp.Key} → {kvp.Value}");
+                    Debug.WriteLine($"Invalid key mapping: {kvp.Key} → {kvp.Value}");
                 }
             }
             

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace RealTimeUdpStream.Core.Audio
 {
     /// <summary>
-    /// Ph�t �m thanh t? c�c AudioPacket nh?n du?c (v?i/kh�ng delay t�y ch? d?)
+    /// Phát âm thanh từ các AudioPacket nhận được (với/không delay tùy chọn)
     /// </summary>
     public class AudioPlayback : IDisposable
     {
@@ -22,7 +22,7 @@ namespace RealTimeUdpStream.Core.Audio
         private readonly ConcurrentQueue<AudioPacket> _audioQueue;
         private readonly ConcurrentQueue<DelayedAudioData> _delayQueue; // Queue cho delay
         private readonly Timer _bufferTimer;
-        private readonly Timer _delayTimer; // Timer x? l� delay
+        private readonly Timer _delayTimer; // Timer để xử lý delay
         private readonly object _playbackLock = new object();
         private bool _disposed = false;
         private bool _isPlaying = false;
@@ -68,10 +68,10 @@ namespace RealTimeUdpStream.Core.Audio
 
             InitializePlayback();
 
-            // Timer d? ki?m tra v� qu?n l� buffer (reduced frequency to reduce overhead)
+            // Timer để kiểm tra và quản lý buffer (reduced frequency to reduce overhead)
             _bufferTimer = new Timer(ProcessAudioBuffer, null, 20, 20); // Check every 20ms (reduced from 10ms)
             
-            // Timer d? x? l� delay buffer (ch? c?n n?u c� delay)
+            // Timer để xử lý delay buffer (chỉ cần nếu có delay)
             if (_enableDelay)
             {
                 _delayTimer = new Timer(ProcessDelayBuffer, null, 50, 50); // Check every 50ms
@@ -112,7 +112,7 @@ namespace RealTimeUdpStream.Core.Audio
 
             _audioQueue.Enqueue(packet);
             
-            // Log d? debug
+            // Log để debug
             if (_audioQueue.Count == 1 || _audioQueue.Count % 100 == 0)
             {
                 Debug.WriteLine($"[AudioPlayback] Queued audio packet. Queue size: {_audioQueue.Count}, Delay mode: {_enableDelay}");
@@ -128,7 +128,7 @@ namespace RealTimeUdpStream.Core.Audio
                 int queueCountBefore = _audioQueue.Count;
                 int processedCount = 0;
                 
-                // X? l� t?t c? packets trong queue
+                // Xử lý tất cả packets trong queue
                 while (_audioQueue.TryDequeue(out AudioPacket packet))
                 {
                     using (packet)
@@ -145,7 +145,7 @@ namespace RealTimeUdpStream.Core.Audio
                     }
                 }
 
-                // Qu?n l� playback state
+                // Quản lý playback state
                 ManagePlaybackState();
             }
             catch (Exception ex)
@@ -191,11 +191,11 @@ namespace RealTimeUdpStream.Core.Audio
                                 
                                 // Decode to PCM
                                 pcmData = _opusDecoder.Decode(opusData);
-                                // Debug.WriteLine($"🎵 Opus decoded: {opusData.Length} → {pcmData.Length} bytes");
+                                // Debug.WriteLine($" Opus decoded: {opusData.Length} → {pcmData.Length} bytes");
                             }
                             catch (Exception decEx)
                             {
-                                Debug.WriteLine($"❌ Opus decoding failed: {decEx.Message}");
+                                Debug.WriteLine($"Opus decoding failed: {decEx.Message}");
                                 return; // Skip this packet if decode fails
                             }
                         }
@@ -211,7 +211,7 @@ namespace RealTimeUdpStream.Core.Audio
                         
                         if (_enableDelay)
                         {
-                            // CLIENT mode: Th�m v�o delay queue
+                            // CLIENT mode: Them vao delay queue
                             var delayedItem = new DelayedAudioData
                             {
                                 Data = pcmData,
@@ -220,7 +220,7 @@ namespace RealTimeUdpStream.Core.Audio
                             
                             _delayQueue.Enqueue(delayedItem);
                             
-                            // LOG d? debug - log thu?ng xuy�n hon
+                            // LOG để debug - log thường xuyên hơn
                             if (_delayQueue.Count == 1 || _delayQueue.Count % 50 == 0)
                             {
                                 Debug.WriteLine($"[CLIENT DELAY MODE] Audio queued with {_delayDurationMs}ms delay. Queue size: {_delayQueue.Count}");
@@ -229,10 +229,10 @@ namespace RealTimeUdpStream.Core.Audio
                         }
                         else
                         {
-                            // HOST mode: Ph�t ngay kh�ng delay
+                            // HOST mode: Phát ngay không delay
                             _waveProvider.AddSamples(pcmData, 0, pcmData.Length);
                             
-                            if (DateTime.UtcNow.Ticks % 1000000 == 0) // Log th?nh tho?ng
+                            if (DateTime.UtcNow.Ticks % 1000000 == 0) // Log thinh thoang
                             {
                                 Debug.WriteLine($"[HOST NO-DELAY MODE] Audio playing immediately. Buffer: {_waveProvider.BufferedDuration.TotalMilliseconds}ms");
                             }
@@ -298,12 +298,12 @@ namespace RealTimeUdpStream.Core.Audio
 
                 if (!_isPlaying && bufferedDurationMs >= MIN_BUFFER_DURATION_MS)
                 {
-                    // B?t d?u ph�t khi c� d? buffer
+                    // BBat dau phat khi co du buffer
                     StartPlayback();
                 }
                 else if (_isPlaying && bufferedDurationMs <= 0)
                 {
-                    // D?ng ph�t khi h?t buffer
+                    // Dung phat khi het buffer
                     StopPlayback();
                 }
             }

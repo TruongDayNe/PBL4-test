@@ -46,15 +46,15 @@ namespace RealTimeUdpStream.Core.ViGEm
         {
             try
             {
-                Debug.WriteLine("🔄 [ViGEmManager] Config changed - controller mappings reloaded");
-                Console.WriteLine("🔄 [ViGEmManager] Config changed - controller mappings reloaded");
+                Debug.WriteLine("[ViGEmManager] Config changed - controller mappings reloaded");
+                Console.WriteLine(" [ViGEmManager] Config changed - controller mappings reloaded");
                 
                 // Controller mapping được load lại tự động khi parse packet
                 // Không cần reload gì thêm vì mỗi lần simulate đều check mapping mới
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"❌ [ViGEmManager] Error handling config reload: {ex.Message}");
+                Debug.WriteLine($" [ViGEmManager] Error handling config reload: {ex.Message}");
             }
         }
 
@@ -252,7 +252,7 @@ namespace RealTimeUdpStream.Core.ViGEm
 
             try
             {
-                Console.WriteLine($"[ViGEmManager] ✅ Received ViGEm packet (Type: 0x{packet.Header.PacketType:X2})");
+                Console.WriteLine($"[ViGEmManager]  Received ViGEm packet (Type: 0x{packet.Header.PacketType:X2})");
 
                 var payloadData = new byte[packet.Payload.Count];
                 Buffer.BlockCopy(packet.Payload.Array, packet.Payload.Offset, payloadData, 0, packet.Payload.Count);
@@ -280,7 +280,7 @@ namespace RealTimeUdpStream.Core.ViGEm
             
             if (_vigemController == null) 
             {
-                Console.WriteLine("[ViGEmManager] ❌ Controller is NULL - cannot update state!");
+                Console.WriteLine("[ViGEmManager]  Controller is NULL - cannot update state!");
                 return;
             }
 

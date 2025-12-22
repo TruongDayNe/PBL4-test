@@ -75,9 +75,9 @@ namespace RealTimeUdpStream.Core.Audio
 
         public void SetTargetEndPoint(System.Net.IPEndPoint targetEndPoint)
         {
-            Debug.WriteLine($"🎯 SetTargetEndPoint CALLED: {targetEndPoint}, _isStreaming={_isStreaming}, Instance={GetHashCode()}");
+            Debug.WriteLine($"SetTargetEndPoint CALLED: {targetEndPoint}, _isStreaming={_isStreaming}, Instance={GetHashCode()}");
             _targetEndPoint = targetEndPoint;
-            Debug.WriteLine($"🎯 _targetEndPoint NOW SET to: {_targetEndPoint}");
+            Debug.WriteLine($"_targetEndPoint NOW SET to: {_targetEndPoint}");
         }
 
         private void InitializeComponents()
